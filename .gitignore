@@ -1,6 +1,10 @@
 # Executables
 oedipus
 main
+build/
+
+.idea/
+.idea
 
 # Prerequisites
 *.d
