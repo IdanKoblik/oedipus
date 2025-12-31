@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LISTENER_H
+#define LISTENER_H
 
 namespace listener {
 
@@ -12,3 +13,5 @@ namespace listener {
     };
 
 }
+
+#endif // LISTENER_H
