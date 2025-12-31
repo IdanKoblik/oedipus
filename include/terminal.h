@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #define CTRL_KEY(k) ((k) & 0x1f)
+#define BACKSPACE 127
 
 namespace terminal {
 

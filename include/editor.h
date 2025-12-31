@@ -4,9 +4,6 @@
 #include <termios.h>
 #include "cake.h"
 
-#define CTRL_KEY(k) ((k) & 0x1f)
-#define BACKSPACE 127
-
 namespace editor {
 
     enum MODE {
@@ -43,9 +40,15 @@ namespace editor {
         void refreshScreen() const;
 
         int handleWriting(char c);
-        int handleCursor(char c);
 
         bool isWritingMode() const;
+
+        void setMode(MODE mode);
+
+        std::string getPath() const;
+        MODE getMode() const;
+        cake::Cake &getCake();
+        cursor &getCursor();
 
         Editor(const Editor&) = delete;
         Editor& operator=(const Editor&) = delete;

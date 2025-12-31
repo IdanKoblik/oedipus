@@ -1,35 +1,51 @@
-#include <iostream>
 #include <unistd.h>
+#include <iostream>
 
 #include "editor.h"
+#include "terminal.h"
+#include "events/event.h"
+#include "events/keyboard_event.h"
+#include "listeners/keyboard_listener.h"
+#include "listeners/mode_listener.h"
+#include "listeners/move_listener.h"
 
 int main(int argc, char* argv[]) {
-   try {
-      if (argc < 2)
-         throw std::runtime_error("No file provided");
+    try {
+        if (argc < 2)
+            throw std::runtime_error("No file provided");
 
-      editor::Editor editor;
-      editor.openFile(argv[1]);
+        editor::Editor editor;
+        event::EventDispatcher dispatcher;
 
-       while (true) {
-           editor.refreshScreen();
+        editor.openFile(argv[1]);
 
-           char c;
-           if (read(STDIN_FILENO, &c, 1) != 1)
-               continue;
+        listener::KeyboardListener KeyboardListener(editor, dispatcher);
+        listener::ModeListener modeListener(editor);
+        listener::MoveListener moveListener(editor);
 
-           if (editor.isWritingMode()) {
-               editor.handleWriting(c);
-               continue;
-           }
+        dispatcher.registerListener(&KeyboardListener);
+        dispatcher.registerListener(&modeListener);
+        dispatcher.registerListener(&moveListener);
 
-           if (editor.handleCursor(c) == 1)
-               break;
-       }
-   } catch (const std::exception& e) {
-      std::cerr << "Fatal: " << e.what() << std::endl;
-      return 1;
-   }
+        while (true) {
+            editor.refreshScreen();
 
-   return 0;
+            char c;
+            if (read(STDIN_FILENO, &c, 1) != 1)
+                continue;
+
+            if (c == CTRL_KEY('q'))
+                break;
+
+            event::KeyboardEvent e(c);
+            dispatcher.fire(e);
+
+            if (editor.isWritingMode())
+                editor.handleWriting(c);
+        }
+
+    } catch (const std::exception& e) {
+        std::cerr << "Fatal: " << e.what() << '\n';
+        return 1;
+    }
 }
