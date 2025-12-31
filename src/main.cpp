@@ -11,19 +11,21 @@ int main(int argc, char* argv[]) {
       editor::Editor editor;
       editor.openFile(argv[1]);
 
-      while (true) {
-         editor.refreshScreen();
+       while (true) {
+           editor.refreshScreen();
 
-         char c;
-         if (read(STDIN_FILENO, &c, 1) != 1)
-            continue;
+           char c;
+           if (read(STDIN_FILENO, &c, 1) != 1)
+               continue;
 
-         if (editor.handleWriting(c) == 0)
-            continue;
+           if (editor.isWritingMode()) {
+               editor.handleWriting(c);
+               continue;
+           }
 
-         if (editor.handleCursor(c) == 1)
-            break;
-      }
+           if (editor.handleCursor(c) == 1)
+               break;
+       }
    } catch (const std::exception& e) {
       std::cerr << "Fatal: " << e.what() << std::endl;
       return 1;

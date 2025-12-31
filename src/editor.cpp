@@ -1,19 +1,18 @@
 #include "editor.h"
 
-#include <cmath>
-#include <cstring>
-#include <filesystem>
-#include <fstream>
-#include <stdexcept>
 #include <unistd.h>
+#include <cstring>
+#include <stdexcept>
+#include <cctype>
 
 #include "ansi.h"
 #include "window.h"
+#include "terminal.h"
 
 namespace editor {
 
 Editor::Editor() {
-    mode = MODE::PHILOSOPHICAL;
+    mode = PHILOSOPHICAL;
 
     if (terminal::enableRawMode(&term) == -1)
         throw std::runtime_error(std::strerror(errno));
@@ -27,44 +26,26 @@ Editor::~Editor() {
     terminal::disableRawMode(&term);
 }
 
-void Editor::openFile(const std::string& path) {
-    if (!std::filesystem::exists(path))
-        throw std::runtime_error("File does not exist");
+void Editor::openFile(const std::string& p) {
+    path = p;
+    cake.loadFromFile(p);
 
-    std::ifstream file(path);
-    if (!file.is_open())
-        throw std::runtime_error(std::strerror(errno));
-
-    this->path = path;
-    rows.clear();
-
-    std::string line;
-    while (std::getline(file, line))
-        rows.push_back(line);
-
-    padding = std::to_string(rows.size()).length() + 1;
-    cur = { padding, 0 };
+    padding = std::to_string(cake.lineCount()).length();
+    cur = { 1, 0 };
 }
 
 void Editor::drawRows() const {
     for (int y = 0; y < screenRows - 1; y++) {
         write(STDOUT_FILENO, ansi::CLEAR_LINE, strlen(ansi::CLEAR_LINE));
 
-        if (y < static_cast<int>(rows.size())) {
-            std::string content = rows[y];
-
-            if (mode == MODE::WRITING && y == cur.y) {
-                int insertPos = writeStartX - padding;
-                if (insertPos < 0) insertPos = 0;
-                if (insertPos > (int)content.size())
-                    insertPos = content.size();
-
-                content.insert(insertPos, writeBuffer);
-            }
+        if (y < static_cast<int>(cake.lineCount())) {
+            std::string content = cake.renderLine(y);
 
             int numPad = padding - std::to_string(y + 1).length();
             std::string line(numPad, ' ');
-            line += std::to_string(y + 1) + " " + content;
+            line += std::to_string(y + 1);
+            line += " ";
+            line += content;
 
             write(STDOUT_FILENO, line.c_str(), line.size());
         }
@@ -76,7 +57,10 @@ void Editor::drawRows() const {
 void Editor::drawStatusBar() const {
     write(STDOUT_FILENO, ansi::INVERT_COLORS, strlen(ansi::INVERT_COLORS));
 
-    std::string status = " oedipus | " + toString(mode) + " | Ctrl-M toggle | Ctrl-Q quit ";
+    std::string status =
+        " oedipus | " +
+        std::string(mode == WRITING ? "WRITING" : "PHILOSOPHICAL") +
+        " | Ctrl-K toggle | Ctrl-Q quit ";
 
     if (static_cast<int>(status.size()) > screenCols)
         status.resize(screenCols);
@@ -104,76 +88,103 @@ void Editor::refreshScreen() const {
 
 void Editor::moveCursor() const {
     char buf[32];
-    int len = snprintf(buf, sizeof(buf), "\x1b[%d;%dH", cur.y + 1, cur.x + 1);
-    write(STDOUT_FILENO, buf, len);
+
+    // +1 for the immutable space after line number
+    int screenX = padding + 1 + cur.x;
+    int screenY = cur.y + 1;
+
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", screenY, screenX);
+    write(STDOUT_FILENO, buf, strlen(buf));
 }
 
 int Editor::handleWriting(char c) {
-    if (mode != MODE::WRITING)
-        return 1;
+    if (mode != WRITING)
+        return 0;
 
-    if (c == CTRL_KEY('m')) {
-        mode = MODE::PHILOSOPHICAL;
-
-        std::string& line = rows[cur.y];
-        int insertPos = writeStartX - padding;
-
-        if (insertPos < 0) insertPos = 0;
-        if (insertPos > (int)line.size())
-            insertPos = line.size();
-
-        line.insert(insertPos, writeBuffer);
-        writeBuffer.clear();
-
-        std::ofstream file(path);
-        for (const auto& r : rows)
-            file << r << '\n';
-
+    if (c == CTRL_KEY('k')) {
+        mode = PHILOSOPHICAL;
+        cake.saveToFile(path);
         return 0;
     }
 
     if (isprint(c)) {
-        writeBuffer.push_back(c);
+        cake.insertChar(cur.x, cur.y, c);
         cur.x++;
+        return 0;
     }
 
-    if ((c == BACKSPACE || c == '\b') && (!writeBuffer.empty() && cur.x > 0)) {
-        writeBuffer.pop_back();
-        cur.x--;
+    if (c == BACKSPACE || c == '\b') {
+        if (cur.x > 1) {
+            cake.deleteChar(cur.x - 1, cur.y);
+            cur.x--;
+        }
+        return 0;
+    }
+
+    if (c == '\r') {
+        cake.insertNewLine(cur.x, cur.y);
+        cur.y++;
+        cur.x = 1;
+        return 0;
     }
 
     return 0;
 }
 
 int Editor::handleCursor(char c) {
-    if (mode != MODE::PHILOSOPHICAL)
+    if (mode != PHILOSOPHICAL)
         return 0;
 
     if (c == CTRL_KEY('q'))
         return 1;
 
-    if (c == CTRL_KEY('m')) {
-        mode = MODE::WRITING;
-        writeBuffer.clear();
-        writeStartX = cur.x;
+    if (c == CTRL_KEY('k')) {
+        mode = WRITING;
         return 0;
     }
 
     switch (c) {
-        case 'h': cur.x--; break;
-        case 'l': cur.x++; break;
-        case 'k': cur.y--; break;
-        case 'j': cur.y++; break;
+        case 'h':
+            if (cur.x > 1) {
+                cur.x--;
+            } else if (cur.y > 0) {
+                cur.y--;
+                cur.x = cake.lineLength(cur.y);
+            }
+            break;
+
+        case 'l': {
+            size_t len = cake.lineLength(cur.y) + 1;
+            if (cur.x < static_cast<int>(len)) {
+                cur.x++;
+            } else if (cur.y + 1 < static_cast<int>(cake.lineCount())) {
+                cur.y++;
+                cur.x = 1;
+            }
+            break;
+        }
+
+        case 'k':
+            if (cur.y > 0) {
+                cur.y--;
+            }
+            break;
+
+        case 'j':
+            if (cur.y + 1 < static_cast<int>(cake.lineCount()))
+                cur.y++;
+            break;
     }
 
-    if (cur.x < padding)
-        cur.x = padding;
-    if (cur.y < 0)
-        cur.y = 0;
-    if (cur.y >= (int)rows.size())
-        cur.y = rows.size() - 1;
+    size_t len = cake.lineLength(cur.y);
+    if (cur.x > static_cast<int>(len) + 1)
+        cur.x = len + 1;
 
     return 0;
 }
 
-} // namespace editor
+bool Editor::isWritingMode() const {
+    return mode == WRITING;
+}
+
+}

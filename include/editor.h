@@ -1,67 +1,56 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
-#include <fstream>
 #include <termios.h>
-#include <vector>
-#include "terminal.h"
+#include "cake.h"
 
+#define CTRL_KEY(k) ((k) & 0x1f)
 #define BACKSPACE 127
 
 namespace editor {
 
-typedef enum {
-    PHILOSOPHICAL,
-    WRITING
-} MODE;
+    enum MODE {
+        PHILOSOPHICAL,
+        WRITING
+    };
 
-inline std::string toString(MODE mode) {
-    switch (mode) {
-        case PHILOSOPHICAL: return "PHILOSOPHICAL";
-        case WRITING: return "WRITING";
-        default: return "Unknown";
-    }
-}
+    struct cursor {
+        int x;
+        int y;
+    };
 
-typedef struct {
-    int x;
-    int y;
-} cursor;
+    class Editor {
+    private:
+        struct termios term;
+        cake::Cake cake;
 
-class Editor {
-private:
-    struct termios term;
-    std::vector<std::string> rows;
-    cursor cur;
-    MODE mode;
-    std::string path;
+        cursor cur;
+        MODE mode;
+        std::string path;
 
-    int writeStartX = 0;
-    std::string writeBuffer;
+        int screenRows, screenCols;
+        int padding;
 
-    int screenCols, screenRows;
-    int padding;
+        void drawRows() const;
+        void drawStatusBar() const;
+        void moveCursor() const;
 
-    void drawRows() const;
-    void drawStatusBar() const;
-    void moveCursor() const;
+    public:
+        Editor();
+        ~Editor();
 
-public:
-    Editor();
-    ~Editor();
+        void openFile(const std::string& path);
+        void refreshScreen() const;
 
-    void openFile(const std::string &path);
+        int handleWriting(char c);
+        int handleCursor(char c);
 
-    void refreshScreen() const;
-    int handleWriting(char c);
+        bool isWritingMode() const;
 
-    int handleCursor(char c);
-    cursor *getCursor();
-
-    Editor(const Editor&) = delete;
-    Editor& operator=(const Editor&) = delete;
-};
+        Editor(const Editor&) = delete;
+        Editor& operator=(const Editor&) = delete;
+    };
 
 }
 
-#endif //EDITOR_H
+#endif // EDITOR_H
