@@ -31,14 +31,12 @@ int main(int argc, char* argv[]) {
             }
             case tui::Options::OPEN_FILE: {
                 const std::string file = tui::prompt("Open file", "Enter file path:");
-                endwin();
 
                 startEditor(file);
                 break;
             }
             case tui::Options::CREATE_FILE: {
                 const std::string file = tui::prompt("Create new file", "Enter file name:");
-                endwin();
 
                 std::ofstream outfile (file);
                 outfile.close();
