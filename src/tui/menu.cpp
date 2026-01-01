@@ -28,7 +28,7 @@ namespace tui {
             mvwhline(win, 2, 1, ACS_HLINE, MENU_WIDTH - 2);
 
             for (size_t i = 0; i < items.size(); ++i) {
-                int y = 4 + i * 2;
+                const int y = 4 + i * 2;
 
                 if (static_cast<int>(i) == selected)
                     wattron(win, A_REVERSE);
@@ -55,7 +55,6 @@ namespace tui {
                     return static_cast<Options>(selected);
             }
         }
-
     }
 
     std::string prompt(const std::string &title, const std::string &prompt) {

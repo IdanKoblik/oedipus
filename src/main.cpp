@@ -20,37 +20,37 @@ int main(int argc, char* argv[]) {
     keypad(stdscr, true);
     curs_set(0);
 
-    if (argc < 2) {
-        tui::Options option = tui::showMenu();
-        refresh();
-
-        switch (option) {
-            case tui::Options::EXIT: {
-                endwin();
-                break;
-            }
-            case tui::Options::OPEN_FILE: {
-                const std::string file = tui::prompt("Open file", "Enter file path:");
-
-                startEditor(file);
-                break;
-            }
-            case tui::Options::CREATE_FILE: {
-                const std::string file = tui::prompt("Create new file", "Enter file name:");
-
-                std::ofstream outfile (file);
-                outfile.close();
-
-                startEditor(file);
-                break;
-            }
-        }
+    if (argc > 2) {
+        startEditor(argv[1]);
+        endwin();
 
         return 0;
     }
 
-    startEditor(argv[1]);
-    endwin();
+    const tui::Options option = tui::showMenu();
+    refresh();
+
+    switch (option) {
+        case tui::Options::EXIT: {
+            endwin();
+            break;
+        }
+        case tui::Options::OPEN_FILE: {
+            const std::string file = tui::prompt("Open file", "Enter file path:");
+
+            startEditor(file);
+            break;
+        }
+        case tui::Options::CREATE_FILE: {
+            const std::string file = tui::prompt("Create new file", "Enter file name:");
+
+            std::ofstream outfile (file);
+            outfile.close();
+
+            startEditor(file);
+            break;
+        }
+    }
 
     return 0;
 }
