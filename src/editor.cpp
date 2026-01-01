@@ -111,7 +111,13 @@ namespace editor {
             if (cur.x > 1) {
                 cake.deleteChar(cur.x - 1, cur.y);
                 cur.x--;
+                return 0;
             }
+
+            cur.y--;
+            size_t len = cake.lineLength(cur.y);
+            cur.x = len + 1;
+
             return 0;
         }
 

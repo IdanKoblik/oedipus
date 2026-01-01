@@ -1,6 +1,7 @@
+#include <fstream>
 #include <unistd.h>
 #include <iostream>
-
+#include <ncurses.h>
 #include "editor.h"
 #include "terminal.h"
 #include "events/event.h"
@@ -8,16 +9,60 @@
 #include "listeners/keyboard_listener.h"
 #include "listeners/mode_listener.h"
 #include "listeners/move_listener.h"
+#include "tui/menu.h"
+
+void startEditor(const std::string &filePath);
 
 int main(int argc, char* argv[]) {
-    try {
-        if (argc < 2)
-            throw std::runtime_error("No file provided");
+    initscr();
+    cbreak();
+    noecho();
+    keypad(stdscr, true);
+    curs_set(0);
 
+    if (argc < 2) {
+        tui::Options option = tui::showMenu();
+        refresh();
+
+        switch (option) {
+            case tui::Options::EXIT: {
+                endwin();
+                break;
+            }
+            case tui::Options::OPEN_FILE: {
+                const std::string file = tui::prompt("Open file", "Enter file path:");
+                endwin();
+
+                startEditor(file);
+                break;
+            }
+            case tui::Options::CREATE_FILE: {
+                const std::string file = tui::prompt("Create new file", "Enter file name:");
+                endwin();
+
+                std::ofstream outfile (file);
+                outfile.close();
+
+                startEditor(file);
+                break;
+            }
+        }
+
+        return 0;
+    }
+
+    startEditor(argv[1]);
+    endwin();
+
+    return 0;
+}
+
+void startEditor(const std::string &filePath) {
+    try {
         editor::Editor editor;
         event::EventDispatcher dispatcher;
 
-        editor.openFile(argv[1]);
+        editor.openFile(filePath);
 
         listener::KeyboardListener KeyboardListener(editor, dispatcher);
         listener::ModeListener modeListener(editor);
@@ -43,9 +88,9 @@ int main(int argc, char* argv[]) {
             if (editor.isWritingMode())
                 editor.handleWriting(c);
         }
-
     } catch (const std::exception& e) {
         std::cerr << "Fatal: " << e.what() << '\n';
-        return 1;
     }
+
+    endwin();
 }

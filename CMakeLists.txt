@@ -12,3 +12,9 @@ file(GLOB_RECURSE SOURCES
 
 add_executable(oedipus ${SOURCES})
 target_include_directories(oedipus PRIVATE include)
+
+# ---- ncurses ----
+find_package(Curses REQUIRED)
+
+target_include_directories(oedipus PRIVATE ${CURSES_INCLUDE_DIRS})
+target_link_libraries(oedipus PRIVATE ${CURSES_LIBRARIES})

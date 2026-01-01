@@ -12,3 +12,9 @@ void getWindowSize(int &rows, int &cols) {
     rows = ws.ws_row;
     cols = ws.ws_col;
 }
+
+WINDOW* centerWindow(int h, int w) {
+    int y = (LINES - h) / 2;
+    int x = (COLS - w) / 2;
+    return newwin(h, w, y, x);
+}
