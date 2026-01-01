@@ -13,7 +13,10 @@ namespace event {
         explicit KeyboardEvent(char k) : key(k) {}
         char getKey() const { return key; }
 
-        void dispatchTo(listener::IListenerBase* l) override;
+        void dispatchTo(listener::IListenerBase* l) override {
+            if (auto* typed =dynamic_cast<listener::IListener<KeyboardEvent>*>(l))
+                typed->handle(*this);
+        }
     };
 
 }

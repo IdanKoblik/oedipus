@@ -14,7 +14,10 @@ namespace event {
         explicit ModeEvent(editor::MODE m) : mode(m) {}
         editor::MODE getMode() const { return mode; }
 
-        void dispatchTo(listener::IListenerBase* l) override;
+        void dispatchTo(listener::IListenerBase* l) override {
+            if (auto* typed = dynamic_cast<listener::IListener<ModeEvent>*>(l))
+                typed->handle(*this);
+        }
     };
 
 }
