@@ -1,11 +1,13 @@
 #include "tui/menu.h"
 
 #include <cstring>
-#include <iostream>
-#include <sstream>
+#include <unistd.h>
+#include <string>
 #include <vector>
 
+#include "ansi.h"
 #include "window.h"
+#include "terminal.h"
 
 namespace tui {
 
@@ -17,73 +19,92 @@ namespace tui {
             "Exit"
         };
 
-        WINDOW* win = centerWindow(MENU_HEIGHT, MENU_WIDTH);
-        keypad(win, true);
-
         int selected = 0;
+        int x, y;
 
         while (true) {
-            box(win, 0, 0);
-            mvwprintw(win, 1, (MENU_WIDTH - 20) / 2, "File Options");
-            mvwhline(win, 2, 1, ACS_HLINE, MENU_WIDTH - 2);
+            window::clear();
+            write(STDOUT_FILENO, ansi::HIDE_CURSOR, strlen(ansi::HIDE_CURSOR));
+            write(STDOUT_FILENO, ansi::CURSOR_HOME, strlen(ansi::CURSOR_HOME));
+
+            window::drawCenteredBox(MENU_WIDTH, MENU_HEIGHT, x, y);
+
+            window::moveCursor(y + 1, x + (MENU_WIDTH - 12) / 2);
+            window::writeStr("File Options");
 
             for (size_t i = 0; i < items.size(); ++i) {
-                const int y = 4 + i * 2;
+                window::moveCursor(y + 4 + i * 2, x + 4);
 
                 if (static_cast<int>(i) == selected)
-                    wattron(win, A_REVERSE);
+                    window::writeStr("\033[7m");
 
-                mvwprintw(win, y, 4, items[i].c_str());
-
-                wattroff(win, A_REVERSE);
+                window::writeStr(items[i]);
+                window::writeStr("\033[0m");
             }
 
-            mvwprintw(win, MENU_HEIGHT - 2, 4, "Use ↑ ↓  Enter to select");
+            window::moveCursor(y + MENU_HEIGHT - 2, x + 4);
+            window::writeStr("↑ ↓  Enter");
 
-            wrefresh(win);
+            char c;
+            if (read(STDIN_FILENO, &c, 1) != 1)
+                continue;
 
-            int ch = wgetch(win);
-            switch (ch) {
-                case KEY_UP:
-                    selected = (selected - 1 + items.size()) % items.size();
-                    break;
-                case KEY_DOWN:
-                    selected = (selected + 1) % items.size();
-                    break;
-                case '\n':
-                    delwin(win);
-                    return static_cast<Options>(selected);
+            if (c == '[') {
+                selected = (selected - 1 + items.size()) % items.size();
+            } else if (c == ']') {
+                selected = (selected + 1) % items.size();
+            } else if (c == '\n' || c == '\r') {
+                return static_cast<Options>(selected);
             }
         }
     }
 
-    std::string prompt(const std::string &title, const std::string &prompt) {
-        WINDOW* dialog = centerWindow(PROMPT_HEIGHT, PROMPT_WIDTH);
-        box(dialog, 0, 0);
+    std::string prompt(const std::string& title, const std::string& msg) {
+        int x, y;
+        window::clear();
+        window::drawCenteredBox(PROMPT_WIDTH, PROMPT_HEIGHT, x, y);
 
-        mvwprintw(dialog, 1, 2, "%s", title.c_str());
-        mvwhline(dialog, 2, 1, ACS_HLINE, PROMPT_WIDTH - 2);
-        mvwprintw(dialog, 4, 2, prompt.c_str());
+        window::moveCursor(y + 1, x + 2);
+        window::writeStr(title);
 
-        int box_w = PROMPT_WIDTH - 6;
-        WINDOW* textbox = derwin(dialog, 3, box_w, 6, 3);
-        box(textbox, 0, 0);
-        wrefresh(dialog);
-        wrefresh(textbox);
+        window::moveCursor(y + 3, x + 2);
+        window::writeStr(msg);
 
-        echo();
-        curs_set(1);
+        int inputX = x + 2;
+        int inputY = y + 5;
+        window::drawBox(inputX, inputY, PROMPT_WIDTH - 4, 3);
 
-        char buf[256]{};
-        mvwgetnstr(textbox, 1, 1, buf, 255);
+        window::moveCursor(inputY + 1, inputX + 1);
 
-        noecho();
-        curs_set(0);
+        std::string input;
 
-        delwin(textbox);
-        delwin(dialog);
+        while (true) {
+            char c;
+            if (read(STDIN_FILENO, &c, 1) != 1)
+                continue;
 
-        return std::string(buf);
+            if (c == '\n' || c == '\r') {
+                break;
+            }
+
+            else if (c == 127 || c == 8) { // backspace
+                if (!input.empty()) {
+                    input.pop_back();
+                    window::moveCursor(inputY + 1, inputX + 1);
+                    window::writeStr(std::string(PROMPT_WIDTH - 6, ' '));
+                    window::moveCursor(inputY + 1, inputX + 1);
+                    window::writeStr(input);
+                }
+            }
+            else if (c >= 32 && c <= 126) {
+                if (static_cast<int>(input.size()) < PROMPT_WIDTH - 6) {
+                    input.push_back(c);
+                    window::writeStr(std::string(1, c));
+                }
+            }
+        }
+
+        return input;
     }
 
 }

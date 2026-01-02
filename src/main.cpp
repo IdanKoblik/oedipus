@@ -1,9 +1,10 @@
+#include <cstring>
 #include <fstream>
 #include <unistd.h>
 #include <iostream>
-#include <ncurses.h>
 #include "editor.h"
 #include "terminal.h"
+#include "window.h"
 #include "events/event.h"
 #include "events/keyboard_event.h"
 #include "listeners/keyboard_listener.h"
@@ -14,25 +15,17 @@
 void startEditor(const std::string &filePath);
 
 int main(int argc, char* argv[]) {
-    initscr();
-    cbreak();
-    noecho();
-    keypad(stdscr, true);
-    curs_set(0);
-
     if (argc > 2) {
         startEditor(argv[1]);
-        endwin();
-
         return 0;
     }
 
-    const tui::Options option = tui::showMenu();
-    refresh();
+    struct termios term;
+    if (terminal::enableRawMode(&term) == -1)
+        throw std::runtime_error(std::strerror(errno));
 
-    switch (option) {
+    switch (const tui::Options option = tui::showMenu()) {
         case tui::Options::EXIT: {
-            endwin();
             break;
         }
         case tui::Options::OPEN_FILE: {
@@ -52,6 +45,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    terminal::disableRawMode(&term);
     return 0;
 }
 
@@ -89,6 +83,4 @@ void startEditor(const std::string &filePath) {
     } catch (const std::exception& e) {
         std::cerr << "Fatal: " << e.what() << '\n';
     }
-
-    endwin();
 }

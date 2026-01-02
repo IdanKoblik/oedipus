@@ -1,7 +1,7 @@
 #include "tui/alert.h"
 
-#include <curses.h>
-
+#include <unistd.h>
+#include <sys/ioctl.h>
 #include "window.h"
 
 namespace tui {
@@ -15,19 +15,19 @@ namespace tui {
     }
 
     void alert(const std::string &msg, AlertType alertType) {
-        WINDOW *window = centerWindow(ALERT_HEIGHT, ALERT_WIDTH);
-        box(window, 0, 0);
+        int x, y;
+        window::drawCenteredBox(50, 7, x, y);
 
-        const std::string type = parseType(alertType);
-        mvwprintw(window, 1, 2, type.c_str());
-        mvwhline(window, 2, 1, ACS_HLINE, ALERT_WIDTH - 2);
+        window::moveCursor(y+1, x+2);
+        printf(alertType == AlertType::ERROR ? "ERROR" : "WARNING");
 
-        mvwprintw(window, 4, (ALERT_WIDTH - msg.size()) / 2, "%s", msg.c_str());
-        mvwprintw(window, ALERT_H - 2, (ALERT_WIDTH - 24) / 2, "Press any key to continue");
+        window::moveCursor(y+3, x + (50 - msg.size()) / 2);
+        printf("%s", msg.c_str());
 
-        wrefresh(window);
-        wgetch(window);
-        delwin(window);
+        window::moveCursor(y+5, x + 13);
+        printf("Press any key to continue");
+
+        fflush(stdout);
     }
 
 }
