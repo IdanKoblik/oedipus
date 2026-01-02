@@ -57,7 +57,6 @@ namespace editor {
             status.resize(screenCols);
 
         write(STDOUT_FILENO, status.c_str(), status.size());
-
         while (static_cast<int>(status.size()) < screenCols) {
             write(STDOUT_FILENO, " ", 1);
             status.push_back(' ');

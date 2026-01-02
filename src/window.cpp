@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 
+#include "ansi.h"
+
 namespace window {
 
     void getWindowSize(int &rows, int &cols) {
@@ -56,7 +58,7 @@ namespace window {
     }
 
     void clear() {
-        writeStr("\033[2J\033[H");
+        writeStr(ansi::CLEAR);
     }
 
 }

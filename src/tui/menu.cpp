@@ -36,18 +36,21 @@ namespace tui {
                 window::moveCursor(y + 4 + i * 2, x + 4);
 
                 if (static_cast<int>(i) == selected)
-                    window::writeStr("\033[7m");
+                    window::writeStr(ansi::SELECTED);
 
                 window::writeStr(items[i]);
-                window::writeStr("\033[0m");
+                window::writeStr(ansi::NON_SELECTED);
             }
 
             window::moveCursor(y + MENU_HEIGHT - 2, x + 4);
-            window::writeStr("↑ ↓  Enter");
+            window::writeStr("↑ ↓  Enter | q for exit");
 
             char c;
             if (read(STDIN_FILENO, &c, 1) != 1)
                 continue;
+
+            if (c == 'q')
+                return Options::EXIT;
 
             if (c == '[') {
                 selected = (selected - 1 + items.size()) % items.size();

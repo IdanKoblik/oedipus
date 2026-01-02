@@ -13,6 +13,11 @@ namespace ansi {
     constexpr const char* RESET_ATTRS   = "\x1b[m";
 
     constexpr const char* CRLF = "\r\n";
+    constexpr const char* CLEAR = "\033[2J\033[H";
+
+    constexpr const char* SELECTED = "\033[7m";
+    constexpr const char* NON_SELECTED = "\033[0m";
+
 
 }
 
