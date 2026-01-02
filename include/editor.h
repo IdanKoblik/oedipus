@@ -26,7 +26,6 @@ namespace editor {
         std::string path;
 
         int screenRows, screenCols;
-        int padding;
 
         void drawRows() const;
         void drawStatusBar() const;

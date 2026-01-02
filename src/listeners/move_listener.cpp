@@ -18,7 +18,7 @@ namespace listener {
                     cur.x--;
                 } else if (cur.y > 0) {
                     cur.y--;
-                    cur.x = cake.lineLength(cur.y);
+                    cur.x = cake.lineLength(cur.y) + 1;
                 }
                 break;
 
