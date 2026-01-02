@@ -35,6 +35,7 @@ namespace cake {
         void insertChar(size_t x, size_t y, char c);
         void deleteChar(size_t x, size_t y);
         void insertNewLine(size_t x, size_t y);
+        void removeLine(size_t y);
 
         size_t lineLength(size_t y) const;
     };

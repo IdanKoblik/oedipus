@@ -32,7 +32,7 @@ namespace editor {
             if (y < static_cast<int>(cake.lineCount())) {
                 std::string content = cake.renderLine(y);
 
-                int numPad = padding - std::to_string(y + 1).length();
+                int numPad = std::to_string(cake.lineCount()).length() - std::to_string(y + 1).length();
                 std::string line(numPad, ' ');
                 line += std::to_string(y + 1);
                 line += " ";
@@ -69,7 +69,7 @@ namespace editor {
         char buf[32];
 
         // +1 for the immutable space after line number
-        int screenX = padding + 1 + cur.x;
+        int screenX = std::to_string(cake.lineCount()).length() + 1 + cur.x;
         int screenY = cur.y + 1;
 
         snprintf(buf, sizeof(buf), "\x1b[%d;%dH", screenY, screenX);
@@ -80,7 +80,6 @@ namespace editor {
         path = p;
         cake.loadFromFile(p);
 
-        padding = std::to_string(cake.lineCount()).length();
         cur = { 1, 0 };
     }
 
@@ -112,6 +111,10 @@ namespace editor {
                 return 0;
             }
 
+            if (cur.y <= 0)
+                return 0;
+
+            cake.removeLine(cur.y);
             cur.y--;
             size_t len = cake.lineLength(cur.y);
             cur.x = len + 1;
@@ -120,7 +123,7 @@ namespace editor {
         }
 
         if (c == '\r') {
-            cake.insertNewLine(cur.x, cur.y);
+            cake.insertNewLine(cur.x - 1, cur.y);
             cur.y++;
             cur.x = 1;
             return 0;
