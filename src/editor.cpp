@@ -11,6 +11,20 @@
 
 namespace editor {
 
+    Editor::Editor() {
+        mode = PHILOSOPHICAL;
+        if (terminal::enableRawMode(&term) == -1)
+            throw std::runtime_error(std::strerror(errno));
+
+        window::getWindowSize(screenRows, screenCols);
+        write(STDOUT_FILENO, ansi::SHOW_CURSOR, strlen(ansi::SHOW_CURSOR));
+    }
+
+    Editor::~Editor() {
+        write(STDOUT_FILENO, ansi::SHOW_CURSOR, strlen(ansi::SHOW_CURSOR));
+        terminal::disableRawMode(&term);
+    }
+
     void Editor::drawRows() const {
         for (int y = 0; y < screenRows - 1; y++) {
             write(STDOUT_FILENO, ansi::CLEAR_LINE, strlen(ansi::CLEAR_LINE));
@@ -43,7 +57,6 @@ namespace editor {
             status.resize(screenCols);
 
         write(STDOUT_FILENO, status.c_str(), status.size());
-
         while (static_cast<int>(status.size()) < screenCols) {
             write(STDOUT_FILENO, " ", 1);
             status.push_back(' ');
@@ -61,21 +74,6 @@ namespace editor {
 
         snprintf(buf, sizeof(buf), "\x1b[%d;%dH", screenY, screenX);
         write(STDOUT_FILENO, buf, strlen(buf));
-    }
-
-    Editor::Editor() {
-        mode = PHILOSOPHICAL;
-
-        if (terminal::enableRawMode(&term) == -1)
-            throw std::runtime_error(std::strerror(errno));
-
-        getWindowSize(screenRows, screenCols);
-        write(STDOUT_FILENO, ansi::SHOW_CURSOR, strlen(ansi::SHOW_CURSOR));
-    }
-
-    Editor::~Editor() {
-        write(STDOUT_FILENO, ansi::SHOW_CURSOR, strlen(ansi::SHOW_CURSOR));
-        terminal::disableRawMode(&term);
     }
 
     void Editor::openFile(const std::string& p) {
@@ -111,7 +109,13 @@ namespace editor {
             if (cur.x > 1) {
                 cake.deleteChar(cur.x - 1, cur.y);
                 cur.x--;
+                return 0;
             }
+
+            cur.y--;
+            size_t len = cake.lineLength(cur.y);
+            cur.x = len + 1;
+
             return 0;
         }
 
