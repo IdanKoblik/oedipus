@@ -184,4 +184,20 @@ namespace cake {
         return out;
     }
 
+    const std::string& Cake::getAddBuffer() const {
+        return add;
+    }
+
+    const std::vector<Line>& Cake::getLinesRaw() const {
+        return lines;
+    }
+
+    void Cake::setAddBuffer(const std::string& a) {
+        add = a;
+    }
+
+    void Cake::setLinesRaw(const std::vector<Line>& l) {
+        lines = l;
+    }
+
 }

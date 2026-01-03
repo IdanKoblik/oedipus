@@ -40,6 +40,11 @@ namespace cake {
         std::vector<std::string> getLines() const;
 
         size_t lineLength(size_t y) const;
+
+        const std::string& getAddBuffer() const;
+        const std::vector<Line>& getLinesRaw() const;
+        void setAddBuffer(const std::string& a);
+        void setLinesRaw(const std::vector<Line>& l);
     };
 
 }
