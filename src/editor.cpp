@@ -157,6 +157,18 @@ namespace editor {
             return 0;
         }
 
+        if (c == '\t') {
+            pushUndo();
+            redoStack.clear();
+
+            for (int i = 0; i < conf.settings[config::TAB].value; i++) {
+                cake.insertChar(cur.x - 1, cur.y, ' ');
+                cur.x++;
+            }
+
+            return 0;
+        }
+
         return 0;
     }
 
