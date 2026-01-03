@@ -1,0 +1,36 @@
+name: Build and Upload
+
+on:
+  workflow_dispatch:
+    inputs:
+      VERSION:
+        description: 'Version to upload'
+        required: true
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential
+
+      - name: Build with CMake
+        run: |
+          mkdir -p build
+          cd build
+          cmake ..
+          make
+
+      - name: Upload
+        uses: IdanKoblik/Changelog@prod
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: ${{ inputs.VERSION }}
+          assets: '["./build/oedipus"]'
