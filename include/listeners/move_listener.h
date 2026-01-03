@@ -1,5 +1,6 @@
 #ifndef MOVE_LISTENER_H
 #define MOVE_LISTENER_H
+
 #include "keyboard_listener.h"
 #include "events/move_event.h"
 

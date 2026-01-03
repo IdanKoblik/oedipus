@@ -1,7 +1,10 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
+#include <map>
 #include <termios.h>
+#include <unordered_map>
+
 #include "cake.h"
 
 namespace editor {
@@ -16,6 +19,14 @@ namespace editor {
         int y;
     };
 
+    struct search {
+        bool active = false;
+        std::vector<cursor> positions;
+        std::map<size_t, std::vector<size_t>> matches;
+        std::string target;
+        size_t targetSize;
+    };
+
     class Editor {
     private:
         struct termios term;
@@ -24,6 +35,7 @@ namespace editor {
         cursor cur;
         MODE mode;
         std::string path;
+        search searchState;
 
         int screenRows, screenCols;
 
@@ -48,6 +60,7 @@ namespace editor {
         MODE getMode() const;
         cake::Cake &getCake();
         cursor &getCursor();
+        search &getSearchState();
 
         Editor(const Editor&) = delete;
         Editor& operator=(const Editor&) = delete;

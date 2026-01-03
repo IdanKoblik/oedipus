@@ -11,9 +11,10 @@ namespace tui {
     enum AlertType {
         ERROR,
         WARNING,
+        NOTIFICATION,
     };
 
-    void alert(const std::string &msg, AlertType alertType);
+    bool alert(const std::string &msg, AlertType alertType);
 
 }
 

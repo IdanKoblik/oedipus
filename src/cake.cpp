@@ -3,6 +3,8 @@
 #include <fstream>
 #include <iterator>
 
+#include "editor.h"
+
 namespace cake {
 
     void Cake::loadFromFile(const std::string& path) {
@@ -141,34 +143,45 @@ namespace cake {
     }
 
     void Cake::removeLine(size_t y) {
-    if (lines.empty())
-        return;
+        if (lines.empty())
+            return;
 
-    if (lines.size() == 1) {
-        lines[0].clear();
-        return;
+        if (lines.size() == 1) {
+            lines[0].clear();
+            return;
+        }
+
+        if (y == 0) {
+            Line& first = lines[0];
+            Line& second = lines[1];
+
+            second.insert(second.begin(),
+                          first.begin(),
+                          first.end());
+
+            lines.erase(lines.begin());
+            return;
+        }
+
+        Line& prev = lines[y - 1];
+        Line& curr = lines[y];
+
+        prev.insert(prev.end(),
+                    curr.begin(),
+                    curr.end());
+
+        lines.erase(lines.begin() + y);
     }
 
-    if (y == 0) {
-        Line& first = lines[0];
-        Line& second = lines[1];
+    std::vector<std::string> Cake::getLines() const {
+        std::vector<std::string> out;
+        out.reserve(lines.size());
 
-        second.insert(second.begin(),
-                      first.begin(),
-                      first.end());
+        for (size_t y = 0; y < lines.size(); ++y) {
+            out.push_back(renderLine(y));
+        }
 
-        lines.erase(lines.begin());
-        return;
+        return out;
     }
-
-    Line& prev = lines[y - 1];
-    Line& curr = lines[y];
-
-    prev.insert(prev.end(),
-                curr.begin(),
-                curr.end());
-
-    lines.erase(lines.begin() + y);
-}
 
 }

@@ -26,19 +26,37 @@ namespace editor {
     }
 
     void Editor::drawRows() const {
+        const int totalLines = static_cast<int>(cake.lineCount());
+        const int numberWidth = std::to_string(totalLines).length();
+
         for (int y = 0; y < screenRows - 1; y++) {
             write(STDOUT_FILENO, ansi::CLEAR_LINE, strlen(ansi::CLEAR_LINE));
 
-            if (y < static_cast<int>(cake.lineCount())) {
-                std::string content = cake.renderLine(y);
+            if (y < totalLines) {
+                const std::string content = cake.renderLine(y);
 
-                int numPad = std::to_string(cake.lineCount()).length() - std::to_string(y + 1).length();
-                std::string line(numPad, ' ');
-                line += std::to_string(y + 1);
-                line += " ";
-                line += content;
+                std::string prefix;
+                int numPad = numberWidth - std::to_string(y + 1).length();
+                prefix.append(numPad, ' ');
+                prefix += std::to_string(y + 1);
+                prefix += " ";
 
-                write(STDOUT_FILENO, line.c_str(), line.size());
+                auto it = searchState.matches.find(y);
+
+                if (searchState.active && it != searchState.matches.end()) {
+                    write(STDOUT_FILENO, prefix.data(), prefix.size());
+
+                    window::drawLine(
+                        content,
+                        it->second,
+                        searchState.targetSize
+                    );
+
+                    continue;
+                }
+
+                std::string line = prefix + content;
+                write(STDOUT_FILENO, line.data(), line.size());
             }
 
             write(STDOUT_FILENO, ansi::CRLF, 2);
@@ -155,5 +173,10 @@ namespace editor {
     cursor &Editor::getCursor() {
         return cur;
     }
+
+    search &Editor::getSearchState() {
+        return searchState;
+    }
+
 
 }
