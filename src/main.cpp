@@ -10,12 +10,13 @@
 #include "listeners/keyboard_listener.h"
 #include "listeners/mode_listener.h"
 #include "listeners/move_listener.h"
+#include "listeners/search_listener.h"
 #include "tui/menu.h"
 
 void startEditor(const std::string &filePath);
 
 int main(int argc, char* argv[]) {
-    if (argc > 2) {
+    if (argc == 2) {
         startEditor(argv[1]);
         return 0;
     }
@@ -59,10 +60,12 @@ void startEditor(const std::string &filePath) {
         listener::KeyboardListener KeyboardListener(editor, dispatcher);
         listener::ModeListener modeListener(editor);
         listener::MoveListener moveListener(editor);
+        listener::SearchListener search_listener(editor);
 
         dispatcher.registerListener(&KeyboardListener);
         dispatcher.registerListener(&modeListener);
         dispatcher.registerListener(&moveListener);
+        dispatcher.registerListener(&search_listener);
 
         while (true) {
             editor.refreshScreen();

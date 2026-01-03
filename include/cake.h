@@ -37,6 +37,8 @@ namespace cake {
         void insertNewLine(size_t x, size_t y);
         void removeLine(size_t y);
 
+        std::vector<std::string> getLines() const;
+
         size_t lineLength(size_t y) const;
     };
 

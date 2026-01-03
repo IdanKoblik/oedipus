@@ -2,6 +2,7 @@
 #define WINDOW_H
 
 #include <string>
+#include <vector>
 
 namespace window {
 
@@ -14,10 +15,12 @@ namespace window {
 
     void getWindowSize(int &rows, int &cols);
 
+    void drawLine(const std::string& line, const std::vector<size_t>& matches, size_t len);
+
     void writeStr(const std::string &s);
     void moveCursor(int r, int c);
-    void drawBox(int x, int y, int w, int h);
 
+    void drawBox(int x, int y, int w, int h);
     void drawCenteredBox(int w, int h, int& outX, int& outY);
 
     void clear();

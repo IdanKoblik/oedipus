@@ -8,26 +8,33 @@ namespace tui {
 
     std::string parseType(AlertType type) {
         switch (type) {
-            case AlertType::ERROR: return "ERROR";
-            case AlertType::WARNING: return "WARNING";
+            case ERROR: return "ERROR";
+            case WARNING: return "WARNING";
+            case NOTIFICATION: return "NOTIFICATION";
             default: return "UNKNOWN";
         }
     }
 
-    void alert(const std::string &msg, AlertType alertType) {
+    bool alert(const std::string &msg, AlertType alertType) {
+        window::clear();
+
         int x, y;
         window::drawCenteredBox(50, 7, x, y);
 
-        window::moveCursor(y+1, x+2);
-        printf(alertType == AlertType::ERROR ? "ERROR" : "WARNING");
+        window::moveCursor(y + 1, x + 2);
+        window::writeStr(parseType(alertType));
 
-        window::moveCursor(y+3, x + (50 - msg.size()) / 2);
-        printf("%s", msg.c_str());
+        window::moveCursor(y + 3, x + (50 - msg.size()) / 2);
+        window::writeStr(msg);
 
-        window::moveCursor(y+5, x + 13);
-        printf("Press any key to continue");
+        window::moveCursor(y + 5, x + 13);
+        window::writeStr("Press any key to continue");
 
-        fflush(stdout);
+        char c;
+        if (read(STDIN_FILENO, &c, 1) <= 0)
+            return false;
+
+        return true;
     }
 
 }

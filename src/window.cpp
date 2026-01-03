@@ -1,5 +1,6 @@
 #include "window.h"
 
+#include <cstring>
 #include <stdexcept>
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -15,6 +16,27 @@ namespace window {
 
         rows = ws.ws_row;
         cols = ws.ws_col;
+    }
+
+    void drawLine(const std::string& line, const std::vector<size_t>& matches, size_t len) {
+        size_t pos = 0;
+
+        for (size_t idx : matches) {
+            if (idx < pos)
+                continue;
+
+            write(STDOUT_FILENO, line.data() + pos, idx - pos);
+
+            write(STDOUT_FILENO, ansi::SELECTED_CYAN, strlen(ansi::SELECTED_CYAN));
+            write(STDOUT_FILENO, line.data() + idx, len);
+            write(STDOUT_FILENO, ansi::NON_SELECTED, strlen(ansi::NON_SELECTED));
+
+            pos = idx + len;
+        }
+
+        write(STDOUT_FILENO, line.data() + pos, line.size() - pos);
+
+        write(STDOUT_FILENO, ansi::CRLF, strlen(ansi::CRLF));
     }
 
     void writeStr(const std::string &s) {

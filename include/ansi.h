@@ -16,6 +16,7 @@ namespace ansi {
     constexpr const char* CLEAR = "\033[2J\033[H";
 
     constexpr const char* SELECTED = "\033[7m";
+    constexpr const char* SELECTED_CYAN = "\033[46m";
     constexpr const char* NON_SELECTED = "\033[0m";
 
 
