@@ -10,9 +10,11 @@
 #include "tui/menu.h"
 
 #define MOVE_CHARS_SIZE 5
-constexpr char moveChars[MOVE_CHARS_SIZE] = { 'h', 'j', 'k', 'l', 'n' };
+const char moveChars[MOVE_CHARS_SIZE] = { 'h', 'j', 'k', 'l', 'n' };
 
 namespace listener {
+
+    static void handlePhilosophicalMode(const event::KeyboardEvent& e, editor::Editor &editor, event::EventDispatcher &dispatcher);
 
     void KeyboardListener::handle(const event::KeyboardEvent& e) {
         if (e.getKey() == CTRL_KEY('k')) {
@@ -26,6 +28,31 @@ namespace listener {
             return;
         }
 
+        if (editor.getMode() == editor::PHILOSOPHICAL) {
+            handlePhilosophicalMode(e, editor, dispatcher);
+            return;
+        }
+    }
+
+    static void handlePhilosophicalMode(const event::KeyboardEvent& e, editor::Editor &editor, event::EventDispatcher &dispatcher) {
+        switch (e.getKey()) {
+            case CTRL_KEY('z'):
+                editor.undo();
+                break;
+            case CTRL_KEY('y'):
+                editor.redo();
+                break;
+        }
+
+        if (e.getKey() == CTRL_KEY('s')) {
+            std::string target = tui::prompt("Search ", "Target: ");
+
+            event::SearchEvent event(target, target.size());
+            dispatcher.fire(event);
+
+            return;
+        }
+
         for (int i = 0; i < MOVE_CHARS_SIZE; i++) {
             if (e.getKey() == moveChars[i]) {
                 event::MovementEvent moveEvent(e.getKey());
@@ -33,15 +60,6 @@ namespace listener {
 
                 break;
             }
-        }
-
-        if (e.getKey() == CTRL_KEY('s') && editor.getMode() == editor::PHILOSOPHICAL) {
-            std::string target = tui::prompt("Search ", "Target: ");
-
-            event::SearchEvent event(target, target.size());
-            dispatcher.fire(event);
-
-            return;
         }
     }
 

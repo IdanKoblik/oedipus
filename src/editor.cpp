@@ -117,30 +117,39 @@ namespace editor {
             return 0;
 
         if (isprint(c)) {
-            cake.insertChar(cur.x, cur.y, c);
+            pushUndo();
+            redoStack.clear();
+
+            cake.insertChar(cur.x - 1, cur.y, c);
             cur.x++;
             return 0;
         }
 
         if (c == BACKSPACE || c == '\b') {
+            if (cur.x > 1 || cur.y > 0) {
+                pushUndo();
+                redoStack.clear();
+            }
+
             if (cur.x > 1) {
                 cake.deleteChar(cur.x - 1, cur.y);
                 cur.x--;
                 return 0;
             }
 
-            if (cur.y <= 0)
-                return 0;
-
-            cake.removeLine(cur.y);
-            cur.y--;
-            size_t len = cake.lineLength(cur.y);
-            cur.x = len + 1;
+            if (cur.y > 0) {
+                cake.removeLine(cur.y);
+                cur.y--;
+                cur.x = cake.lineLength(cur.y) + 1;
+            }
 
             return 0;
         }
 
         if (c == '\r') {
+            pushUndo();
+            redoStack.clear();
+
             cake.insertNewLine(cur.x - 1, cur.y);
             cur.y++;
             cur.x = 1;
@@ -178,5 +187,44 @@ namespace editor {
         return searchState;
     }
 
+    void Editor::pushUndo() {
+        undoStack.push_back({
+            cake.getAddBuffer(),
+            cake.getLinesRaw(),
+            cur
+        });
+    }
+
+    void Editor::restoreState(const UndoState& state) {
+        cake.setAddBuffer(state.add);
+        cake.setLinesRaw(state.lines);
+        cur = state.cur;
+    }
+
+    void Editor::undo() {
+        if (undoStack.empty()) return;
+
+        redoStack.push_back({
+            cake.getAddBuffer(),
+            cake.getLinesRaw(),
+            cur
+        });
+
+        restoreState(undoStack.back());
+        undoStack.pop_back();
+    }
+
+    void Editor::redo() {
+        if (redoStack.empty()) return;
+
+        undoStack.push_back({
+            cake.getAddBuffer(),
+            cake.getLinesRaw(),
+            cur
+        });
+
+        restoreState(redoStack.back());
+        redoStack.pop_back();
+    }
 
 }

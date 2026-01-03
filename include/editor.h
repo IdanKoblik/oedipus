@@ -27,6 +27,12 @@ namespace editor {
         size_t targetSize;
     };
 
+    struct UndoState {
+        std::string add;
+        std::vector<cake::Line> lines;
+        editor::cursor cur;
+    };
+
     class Editor {
     private:
         struct termios term;
@@ -39,9 +45,15 @@ namespace editor {
 
         int screenRows, screenCols;
 
+        std::vector<UndoState> undoStack;
+        std::vector<UndoState> redoStack;
+
         void drawRows() const;
         void drawStatusBar() const;
         void moveCursor() const;
+
+        void pushUndo();
+        void restoreState(const UndoState& state);
 
     public:
         Editor();
@@ -61,6 +73,9 @@ namespace editor {
         cake::Cake &getCake();
         cursor &getCursor();
         search &getSearchState();
+
+        void undo();
+        void redo();
 
         Editor(const Editor&) = delete;
         Editor& operator=(const Editor&) = delete;
