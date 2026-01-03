@@ -21,7 +21,7 @@ namespace cake {
         for (size_t i = 0; i <= original.size(); ++i) {
             if (i == original.size() || original[i] == '\n') {
                 lines.push_back({
-                    Piece{BufferKind::ORIGINAL, start, i - start}
+                    piece_t{BufferKind::ORIGINAL, start, i - start}
                 });
                 start = i + 1;
             }
@@ -76,11 +76,11 @@ namespace cake {
         for (size_t i = 0; i <= line.size(); ++i) {
             if (i == line.size() || x <= acc + line[i].len) {
                 if (i < line.size()) {
-                    Piece& p = line[i];
+                    piece_t& p = line[i];
                     size_t off = x - acc;
 
-                    Piece left  = {p.buf, p.start, off};
-                    Piece right = {p.buf, p.start + off, p.len - off};
+                    piece_t left  = {p.buf, p.start, off};
+                    piece_t right = {p.buf, p.start + off, p.len - off};
 
                     line.erase(line.begin() + i);
                     if (right.len) line.insert(line.begin() + i, right);
@@ -103,13 +103,13 @@ namespace cake {
         size_t acc = 0;
 
         for (size_t i = 0; i < line.size(); ++i) {
-            Piece& p = line[i];
+            piece_t& p = line[i];
 
             if (target < acc + p.len) {
                 size_t off = target - acc;
 
-                Piece left  = {p.buf, p.start, off};
-                Piece right = {p.buf, p.start + off + 1, p.len - off - 1};
+                piece_t left  = {p.buf, p.start, off};
+                piece_t right = {p.buf, p.start + off + 1, p.len - off - 1};
 
                 line.erase(line.begin() + i);
                 if (right.len) line.insert(line.begin() + i, right);

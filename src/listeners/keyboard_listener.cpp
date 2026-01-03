@@ -17,7 +17,7 @@ namespace listener {
     static void handlePhilosophicalMode(const event::KeyboardEvent& e, editor::Editor &editor, event::EventDispatcher &dispatcher);
 
     void KeyboardListener::handle(const event::KeyboardEvent& e) {
-        if (e.getKey() == CTRL_KEY('k')) {
+        if (e.getKey() == editor.getConfig().keybindings[config::SWITCH_MOVE].shortcut) {
             editor::MODE next = editor.getMode() == editor::WRITING
                 ? editor::PHILOSOPHICAL
                 : editor::WRITING;
@@ -35,16 +35,17 @@ namespace listener {
     }
 
     static void handlePhilosophicalMode(const event::KeyboardEvent& e, editor::Editor &editor, event::EventDispatcher &dispatcher) {
-        switch (e.getKey()) {
-            case CTRL_KEY('z'):
-                editor.undo();
-                break;
-            case CTRL_KEY('y'):
-                editor.redo();
-                break;
+        if (e.getKey() == editor.getConfig().keybindings[config::UNDO].shortcut) {
+            editor.undo();
+            return;
         }
 
-        if (e.getKey() == CTRL_KEY('s')) {
+        if (e.getKey() == editor.getConfig().keybindings[config::REDO].shortcut) {
+            editor.redo();
+            return;
+        }
+
+        if (e.getKey() == editor.getConfig().keybindings[config::SEARCH_MOVE].shortcut) {
             std::string target = tui::prompt("Search ", "Target: ");
 
             event::SearchEvent event(target, target.size());

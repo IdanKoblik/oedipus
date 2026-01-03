@@ -11,13 +11,19 @@
 #include "listeners/mode_listener.h"
 #include "listeners/move_listener.h"
 #include "listeners/search_listener.h"
+#include "settings/config.h"
 #include "tui/menu.h"
 
-void startEditor(const std::string &filePath);
+static const std::string CONFIG_PATH = "config.ini";
+
+void startEditor(const std::string &filePath, const config::config_t &cfg);
 
 int main(int argc, char* argv[]) {
+    config::config_t cfg = {};
+    config::load_config(CONFIG_PATH, cfg);
+
     if (argc == 2) {
-        startEditor(argv[1]);
+        startEditor(argv[1], cfg);
         return 0;
     }
 
@@ -32,7 +38,7 @@ int main(int argc, char* argv[]) {
         case tui::Options::OPEN_FILE: {
             const std::string file = tui::prompt("Open file", "Enter file path:");
 
-            startEditor(file);
+            startEditor(file, cfg);
             break;
         }
         case tui::Options::CREATE_FILE: {
@@ -41,7 +47,7 @@ int main(int argc, char* argv[]) {
             std::ofstream outfile (file);
             outfile.close();
 
-            startEditor(file);
+            startEditor(file, cfg);
             break;
         }
     }
@@ -50,9 +56,9 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
-void startEditor(const std::string &filePath) {
+void startEditor(const std::string &filePath, const config::config_t &cfg) {
     try {
-        editor::Editor editor;
+        editor::Editor editor(cfg);
         event::EventDispatcher dispatcher;
 
         editor.openFile(filePath);

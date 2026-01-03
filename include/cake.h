@@ -11,13 +11,13 @@ namespace cake {
         ADD
     };
 
-    struct Piece {
+    struct piece_t {
         BufferKind buf;
         size_t start;
         size_t len;
     };
 
-    using Line = std::vector<Piece>;
+    using Line = std::vector<piece_t>;
 
     class Cake {
     private:

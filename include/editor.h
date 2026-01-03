@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "cake.h"
+#include "settings/config.h"
 
 namespace editor {
 
@@ -14,49 +15,51 @@ namespace editor {
         WRITING
     };
 
-    struct cursor {
+    struct cursor_t {
         int x;
         int y;
     };
 
-    struct search {
+    struct search_t {
         bool active = false;
-        std::vector<cursor> positions;
+        std::vector<cursor_t> positions;
         std::map<size_t, std::vector<size_t>> matches;
         std::string target;
         size_t targetSize;
     };
 
-    struct UndoState {
+    struct undoState_t {
         std::string add;
         std::vector<cake::Line> lines;
-        editor::cursor cur;
+        editor::cursor_t cur;
     };
 
     class Editor {
     private:
+        config::config_t conf;
+
         struct termios term;
         cake::Cake cake;
 
-        cursor cur;
+        cursor_t cur;
         MODE mode;
         std::string path;
-        search searchState;
+        search_t searchState;
 
         int screenRows, screenCols;
 
-        std::vector<UndoState> undoStack;
-        std::vector<UndoState> redoStack;
+        std::vector<undoState_t> undoStack;
+        std::vector<undoState_t> redoStack;
 
         void drawRows() const;
         void drawStatusBar() const;
         void moveCursor() const;
 
         void pushUndo();
-        void restoreState(const UndoState& state);
+        void restoreState(const undoState_t& state);
 
     public:
-        Editor();
+        Editor(const config::config_t conf);
         ~Editor();
 
         void openFile(const std::string& path);
@@ -71,8 +74,9 @@ namespace editor {
         std::string getPath() const;
         MODE getMode() const;
         cake::Cake &getCake();
-        cursor &getCursor();
-        search &getSearchState();
+        cursor_t &getCursor();
+        search_t &getSearchState();
+        config::config_t getConfig();
 
         void undo();
         void redo();

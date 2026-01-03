@@ -13,11 +13,12 @@ namespace listener {
         if (editor.getMode() == editor::WRITING)
             return;
 
-        editor::cursor &cur = editor.getCursor();
+        editor::cursor_t &cur = editor.getCursor();
         cake::Cake &cake = editor.getCake();
-        editor::search &searchState = editor.getSearchState();
-        
-        if (e.getKey() == 'n' && searchState.active) {
+        editor::search_t &searchState = editor.getSearchState();
+        std::array<config::keyBinding_t, config::KEYBINDING_COUNT> keyBindings = editor.getConfig().keybindings;
+
+        if (e.getKey() == keyBindings[config::SEARCH_MOVE].shortcut && searchState.active) {
             handleSearchMoving(editor);
             return;
         }
@@ -61,13 +62,13 @@ namespace listener {
     }
 
     void handleSearchMoving(editor::Editor &editor) {
-        std::vector<editor::cursor> positions = editor.getSearchState().positions;
+        std::vector<editor::cursor_t> positions = editor.getSearchState().positions;
         if (n > positions.size() - 1) {
             n = 0;
             return;
         }
 
-        editor::cursor pos = positions[n];
+        editor::cursor_t pos = positions[n];
         pos.x++;
         editor.getCursor() = pos;
         n++;

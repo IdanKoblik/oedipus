@@ -11,7 +11,8 @@
 
 namespace editor {
 
-    Editor::Editor() {
+    Editor::Editor(const config::config_t config) {
+        this->conf = config;
         mode = PHILOSOPHICAL;
         if (terminal::enableRawMode(&term) == -1)
             throw std::runtime_error(std::strerror(errno));
@@ -179,12 +180,16 @@ namespace editor {
         return cake;
     }
 
-    cursor &Editor::getCursor() {
+    cursor_t &Editor::getCursor() {
         return cur;
     }
 
-    search &Editor::getSearchState() {
+    search_t &Editor::getSearchState() {
         return searchState;
+    }
+
+    config::config_t Editor::getConfig() {
+        return conf;
     }
 
     void Editor::pushUndo() {
@@ -195,7 +200,7 @@ namespace editor {
         });
     }
 
-    void Editor::restoreState(const UndoState& state) {
+    void Editor::restoreState(const undoState_t& state) {
         cake.setAddBuffer(state.add);
         cake.setLinesRaw(state.lines);
         cur = state.cur;
