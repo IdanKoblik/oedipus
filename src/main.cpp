@@ -14,7 +14,7 @@
 #include "settings/config.h"
 #include "tui/menu.h"
 
-static const std::string CONFIG_PATH = "config.ini";
+static const std::string CONFIG_PATH = std::string(std::getenv("HOME")) + "/.config/oedipus/config.ini";
 
 void startEditor(const std::string &filePath, const config::config_t &cfg);
 
