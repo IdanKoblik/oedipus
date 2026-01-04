@@ -1,22 +1,20 @@
-#ifndef RAW_H
-#define RAW_H
+#ifndef TERMINAL_H
+#define TERMINAL_H
 
-#include <iostream>
 #include <termios.h>
-#include <unistd.h>
+#include <string>
 
-#define CTRL_KEY(k) ((k) & 0x1f)
-#define BACKSPACE 127
-
-namespace terminal {
-
-inline std::ostream& endl(std::ostream& os) {
-   return os << "\r\n";
+struct Window {
+    size_t rows;
+    size_t cols;
 };
 
 int enableRawMode(struct termios *term);
+
 void disableRawMode(struct termios *term);
 
-}
+void writeStr(const std::string &s);
 
-#endif // RAW_H
+Window windowSize();
+
+#endif // TERMINAL_H

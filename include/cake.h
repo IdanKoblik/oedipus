@@ -1,6 +1,7 @@
 #ifndef CAKE_H
 #define CAKE_H
 
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -20,11 +21,6 @@ namespace cake {
     using Line = std::vector<piece_t>;
 
     class Cake {
-    private:
-        std::string original;
-        std::string add;
-        std::vector<Line> lines;
-
     public:
         void loadFromFile(const std::string& path);
         void saveToFile(const std::string& path) const;
@@ -40,11 +36,10 @@ namespace cake {
         std::vector<std::string> getLines() const;
 
         size_t lineLength(size_t y) const;
-
-        const std::string& getAddBuffer() const;
-        const std::vector<Line>& getLinesRaw() const;
-        void setAddBuffer(const std::string& a);
-        void setLinesRaw(const std::vector<Line>& l);
+    private:
+        std::string original;
+        std::string add;
+        std::vector<Line> lines;
     };
 
 }
