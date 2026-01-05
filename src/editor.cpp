@@ -11,7 +11,9 @@
 
 namespace editor {
 
-    TextEditor::TextEditor() {
+    TextEditor::TextEditor(config::Config& cfg) {
+        this->cfg = cfg;
+
         Window window = windowSize();
         writeStr(std::to_string(window.rows));
         writeStr(std::to_string(window.cols));
@@ -57,7 +59,6 @@ namespace editor {
 
         return true;
     }
-
 
     void TextEditor::render() {
         writeStr(ansi::HIDE_CURSOR);

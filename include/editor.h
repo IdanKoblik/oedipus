@@ -7,10 +7,10 @@
 #include "cursor.h"
 #include "search.h"
 #include "terminal.h"
+#include "config/config.h"
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 #define BACKSPACE 127
-#define TAB_SIZE 4
 
 namespace editor {
 
@@ -38,11 +38,12 @@ namespace editor {
         State state{};
         std::string path;
         cake::Cake cake;
+        config::Config cfg;
 
         std::vector<UndoState> undoStack;
         std::vector<UndoState> redoStack;
 
-        TextEditor();
+        TextEditor(config::Config& cfg);
         ~TextEditor();
 
         void openFile(const std::string &path);

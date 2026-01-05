@@ -31,20 +31,21 @@ namespace listener {
     }
 
     void KeyboardListener::handlePhilosophicalMode(const char key, editor::TextEditor& editor) {
-        if (key == '/') {
+        if (key == editor.cfg.keybindings[config::SEARCH_MOVE].shortcut) {
             const std::string target = tui::prompt(editor.state.window, "Search", "Enter target to search:");
 
             event::SearchEvent event(target);
             event::EventDispatcher::instance().fire(event);
+
             return;
         }
 
-        if (key == 'u') {
+        if (key == editor.cfg.keybindings[config::UNDO].shortcut) {
             editor.undo();
             return;
         }
 
-        if (key == 'r') {
+        if (key == editor.cfg.keybindings[config::REDO].shortcut) {
             editor.redo();
             return;
         }
@@ -105,7 +106,7 @@ namespace listener {
             editor.pushUndo();
             editor.redoStack.clear();
 
-            for (int i = 0; i < TAB_SIZE; i++) {
+            for (int i = 0; i < editor.cfg.settings[config::SETTING_COUNT].value; i++) {
                 editor.cake.insertChar(cursor.x - 1, cursor.y, ' ');
                 cursor.x++;
             }
