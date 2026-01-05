@@ -18,10 +18,17 @@ namespace editor {
         PHILOSOPHICAL
     };
 
+    struct UndoState {
+        std::string add;
+        std::vector<cake::Line> lines;
+        Cursor cursor;
+    };
+
     struct State {
         Window window;
         EditorMode mode;
         Cursor cursor;
+        UndoState undo;
     };
 
     class TextEditor {
@@ -29,6 +36,9 @@ namespace editor {
         State state{};
         std::string path;
         cake::Cake cake;
+
+        std::vector<UndoState> undoStack;
+        std::vector<UndoState> redoStack;
 
         TextEditor();
         ~TextEditor();
@@ -39,6 +49,11 @@ namespace editor {
         void render();
 
         bool handle();
+
+        void undo();
+        void redo();
+
+        void pushUndo();
 
         TextEditor(const TextEditor&) = delete;
         TextEditor& operator=(const TextEditor&) = delete;

@@ -16,7 +16,7 @@ namespace listener {
 
         void handle(const event::KeyboardEvent& e) override;
     private:
-        static void handlePhilosophicalMode(const char key);
+        static void handlePhilosophicalMode(const char key, editor::TextEditor& editor);
         static void handleWritingMode(const char key, editor::TextEditor& editor);
     };
 

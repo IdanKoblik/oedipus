@@ -20,13 +20,25 @@ namespace listener {
             return;
         }
 
-        if (this->editor.state.mode) {
-            handlePhilosophicalMode(e.key);
+        if (this->editor.state.mode == editor::PHILOSOPHICAL) {
+            handlePhilosophicalMode(e.key, this->editor);
             return;
         }
+
+        handleWritingMode(e.key, this->editor);
     }
 
-    void KeyboardListener::handlePhilosophicalMode(const char key) {
+    void KeyboardListener::handlePhilosophicalMode(const char key, editor::TextEditor& editor) {
+        if (key == 'u') {
+            editor.undo();
+            return;
+        }
+
+        if (key == 'r') {
+            editor.redo();
+            return;
+        }
+
         for (char bind : movementBinds) {
             if (bind == key) {
                 event::MovementEvent event(key);
@@ -39,8 +51,8 @@ namespace listener {
     void KeyboardListener::handleWritingMode(const char key, editor::TextEditor& editor) {
         Cursor& cursor = editor.state.cursor;
         if (isprint(key)) {
-            /*pushUndo();
-            redoStack.clear();*/
+            editor.pushUndo();
+            editor.redoStack.clear();
 
             editor.cake.insertChar(cursor.x - 1, cursor.y, key);
             cursor.x++;
@@ -49,13 +61,14 @@ namespace listener {
 
         if (key == BACKSPACE || key == '\b') {
             if (cursor.x > 1 || cursor.y > 0) {
-                /*pushUndo();
-                redoStack.clear();*/
+                editor.pushUndo();
+                editor.redoStack.clear();
             }
 
             if (cursor.x > 1) {
                 editor.cake.deleteChar(cursor.x - 1, cursor.y);
                 cursor.x--;
+                return;
             }
 
             if (cursor.y > 0) {
@@ -63,20 +76,24 @@ namespace listener {
                 cursor.y--;
                 cursor.x = editor.cake.lineLength(cursor.y) + 1;
             }
+
+            return;
         }
 
         if (key == '\r') {
-            /*pushUndo();
-            redoStack.clear();*/
+            editor.pushUndo();
+            editor.redoStack.clear();
 
             editor.cake.insertNewLine(cursor.x - 1, cursor.y);
             cursor.y++;
             cursor.x = 1;
+
+            return;
         }
 
         if (key == '\t') {
-            /*pushUndo();
-            redoStack.clear();*/
+            editor.pushUndo();
+            editor.redoStack.clear();
 
             for (int i = 0; i < TAB_SIZE; i++) {
                 editor.cake.insertChar(cursor.x - 1, cursor.y, ' ');

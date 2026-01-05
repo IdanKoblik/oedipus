@@ -18,7 +18,8 @@ namespace editor {
         this->state = State{
             window,
             PHILOSOPHICAL,
-            Cursor{1, 0}
+            Cursor{1, 0},
+            {}
         };
 
         writeStr(ansi::SHOW_CURSOR);
@@ -121,6 +122,52 @@ namespace editor {
 
         snprintf(buf, sizeof(buf), "\x1b[%lu;%luH", screenY, screenX);
         write(STDOUT_FILENO, buf, strlen(buf));
+    }
+
+    void TextEditor::pushUndo() {
+        this->undoStack.push_back({
+            this->cake.add,
+            this->cake.lines,
+            this->state.cursor
+        });
+        this->redoStack.clear();
+    }
+
+    void TextEditor::undo() {
+        if (this->undoStack.empty())
+            return;
+
+        this->redoStack.push_back({
+            this->cake.add,
+            this->cake.lines,
+            this->state.cursor
+        });
+
+        UndoState snapshot = undoStack.back();
+        this->undoStack.pop_back();
+
+        this->cake.add = snapshot.add;
+        this->cake.lines = snapshot.lines;
+        this->state.cursor = snapshot.cursor;
+    }
+
+
+    void TextEditor::redo() {
+        if (redoStack.empty())
+            return;
+
+        undoStack.push_back({
+            cake.add,
+            cake.lines,
+            state.cursor
+        });
+
+        auto snapshot = redoStack.back();
+        redoStack.pop_back();
+
+        cake.add = snapshot.add;
+        cake.lines = snapshot.lines;
+        state.cursor = snapshot.cursor;
     }
 
 }

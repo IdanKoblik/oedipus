@@ -22,6 +22,10 @@ namespace cake {
 
     class Cake {
     public:
+        std::string original;
+        std::string add;
+        std::vector<Line> lines;
+
         void loadFromFile(const std::string& path);
         void saveToFile(const std::string& path) const;
 
@@ -36,10 +40,6 @@ namespace cake {
         std::vector<std::string> getLines() const;
 
         size_t lineLength(size_t y) const;
-    private:
-        std::string original;
-        std::string add;
-        std::vector<Line> lines;
     };
 
 }
