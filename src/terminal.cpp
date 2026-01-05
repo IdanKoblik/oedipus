@@ -5,6 +5,8 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 
+#include "ansi.h"
+
 int enableRawMode(struct termios *term) {
     if (tcgetattr(STDIN_FILENO, term) == -1)
         return -1;
@@ -26,6 +28,10 @@ void disableRawMode(struct termios *term) {
 
 void writeStr(const std::string &s) {
     write(STDOUT_FILENO, s.c_str(), s.size());
+}
+
+void clear() {
+    writeStr(ansi::CLEAR);
 }
 
 Window windowSize() {

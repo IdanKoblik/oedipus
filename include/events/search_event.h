@@ -9,9 +9,8 @@ namespace event {
     class SearchEvent : public IEvent {
     public:
         const std::string target;
-        const size_t targetSize;
 
-        explicit SearchEvent(const std::string &target, const size_t targetSize) : target(target), targetSize(targetSize) {}
+        explicit SearchEvent(const std::string &target) : target(target) {}
 
         void dispatchTo(listener::IListenerBase* l) override {
             if (auto* typed =dynamic_cast<listener::IListener<SearchEvent>*>(l))

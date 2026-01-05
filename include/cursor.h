@@ -8,5 +8,4 @@ struct Cursor {
     size_t y;
 };
 
-
 #endif // CURSOR_H

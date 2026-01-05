@@ -5,6 +5,7 @@
 
 #include "cake.h"
 #include "cursor.h"
+#include "search.h"
 #include "terminal.h"
 
 #define CTRL_KEY(k) ((k) & 0x1f)
@@ -29,6 +30,7 @@ namespace editor {
         EditorMode mode;
         Cursor cursor;
         UndoState undo;
+        SearchState search;
     };
 
     class TextEditor {

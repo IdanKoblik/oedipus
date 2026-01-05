@@ -7,6 +7,7 @@
 #include "ansi.h"
 #include "events/event.h"
 #include "events/keyboard_event.h"
+#include "tui/tui.h"
 
 namespace editor {
 
@@ -19,6 +20,7 @@ namespace editor {
             window,
             PHILOSOPHICAL,
             Cursor{1, 0},
+            {},
             {}
         };
 
@@ -83,6 +85,20 @@ namespace editor {
                 prefix.append(numPad, ' ');
                 prefix += std::to_string(y + 1);
                 prefix += " ";
+
+                SearchState searchState = this->state.search;
+                auto it = searchState.matches.find(y);
+                if (searchState.active && it != searchState.matches.end()) {
+                    write(STDOUT_FILENO, prefix.data(), prefix.size());
+
+                    tui::drawLine(
+                        content,
+                        it->second,
+                        searchState.targetSize
+                    );
+
+                    continue;
+                }
 
                 std::string line = prefix + content;
                 write(STDOUT_FILENO, line.data(), line.size());

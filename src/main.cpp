@@ -1,5 +1,4 @@
 #include <termios.h>
-#include <unistd.h>
 
 #include "editor.h"
 #include "terminal.h"
@@ -7,8 +6,11 @@
 #include "listeners/keyboard_listener.h"
 #include "listeners/mode_listener.h"
 #include "listeners/movement_listener.h"
+#include "listeners/search_listener.h"
 
 void closeEditor(struct termios *term);
+
+void registerListeners(const editor::TextEditor& editor);
 
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -20,16 +22,7 @@ int main(int argc, char **argv) {
     writeStr("\x1b[?1049h");
 
     editor::TextEditor editor;
-    event::EventDispatcher& dispatcher = event::EventDispatcher::instance();
-
-    listener::KeyboardListener keyboardListener(editor);
-    dispatcher.registerListener(&keyboardListener);
-
-    listener::MovementListener movementListener(editor);
-    dispatcher.registerListener(&movementListener);
-
-    listener::ModeListener modeListener(editor);
-    dispatcher.registerListener(&modeListener);
+    registerListeners(editor);
 
     editor.openFile(argv[1]);
     while (true) {
@@ -46,4 +39,20 @@ int main(int argc, char **argv) {
 void closeEditor(struct termios *term) {
     writeStr("\x1b[?1049l");
     disableRawMode(term);
+}
+
+void registerListeners(editor::TextEditor& editor) {
+    event::EventDispatcher& dispatcher = event::EventDispatcher::instance();
+
+    listener::KeyboardListener keyboardListener(editor);
+    dispatcher.registerListener(&keyboardListener);
+
+    listener::MovementListener movementListener(editor);
+    dispatcher.registerListener(&movementListener);
+
+    listener::ModeListener modeListener(editor);
+    dispatcher.registerListener(&modeListener);
+
+    listener::SearchListener searchListener(editor);
+    dispatcher.registerListener(&searchListener);
 }

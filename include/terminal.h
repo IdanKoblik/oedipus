@@ -15,6 +15,8 @@ void disableRawMode(struct termios *term);
 
 void writeStr(const std::string &s);
 
+void clear();
+
 Window windowSize();
 
 #endif // TERMINAL_H

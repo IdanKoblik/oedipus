@@ -4,7 +4,7 @@ namespace listener {
 
     void ModeListener::handle(const event::ModeEvent &e) {
         this->editor.state.mode = e.mode;
-
+        this->editor.state.search = {};
 
         if (e.mode == editor::PHILOSOPHICAL)
             this->editor.cake.saveToFile(this->editor.path);

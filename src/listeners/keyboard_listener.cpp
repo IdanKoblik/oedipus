@@ -1,6 +1,8 @@
 #include "listeners/keyboard_listener.h"
 
 #include "events/movement_event.h"
+#include "events/search_event.h"
+#include "tui/prompt.h"
 
 #define MOVE_SIZE 4
 static const char movementBinds[MOVE_SIZE] = {'h', 'j', 'k', 'l'};
@@ -29,6 +31,14 @@ namespace listener {
     }
 
     void KeyboardListener::handlePhilosophicalMode(const char key, editor::TextEditor& editor) {
+        if (key == '/') {
+            const std::string target = tui::prompt(editor.state.window, "Search", "Enter target to search:");
+
+            event::SearchEvent event(target);
+            event::EventDispatcher::instance().fire(event);
+            return;
+        }
+
         if (key == 'u') {
             editor.undo();
             return;
