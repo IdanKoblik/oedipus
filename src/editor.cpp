@@ -5,6 +5,8 @@
 #include <unistd.h>
 
 #include "ansi.h"
+#include "events/event.h"
+#include "events/keyboard_event.h"
 
 namespace editor {
 
@@ -34,6 +36,25 @@ namespace editor {
     void TextEditor::closeFile() {
         write(STDOUT_FILENO, ansi::SHOW_CURSOR, strlen(ansi::SHOW_CURSOR));
     }
+
+    bool TextEditor::handle() {
+        char c;
+        ssize_t n = read(STDIN_FILENO, &c, 1);
+        if (n == 0)
+            return true;
+
+        if (n == -1)
+            return false;
+
+        if (c == CTRL_KEY('q'))
+            return false;
+
+        event::KeyboardEvent event(c);
+        event::EventDispatcher::instance().fire(event);
+
+        return true;
+    }
+
 
     void TextEditor::render() {
         writeStr(ansi::HIDE_CURSOR);
