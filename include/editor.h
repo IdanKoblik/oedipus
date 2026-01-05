@@ -1,90 +1,71 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
-#include <map>
-#include <termios.h>
-#include <unordered_map>
+#include <iostream>
 
 #include "cake.h"
-#include "settings/config.h"
+#include "cursor.h"
+#include "search.h"
+#include "terminal.h"
+#include "config/config.h"
+
+#define CTRL_KEY(k) ((k) & 0x1f)
+#define BACKSPACE 127
 
 namespace editor {
 
-    enum MODE {
-        PHILOSOPHICAL,
-        WRITING
+    enum EditorMode {
+        WRITING,
+        PHILOSOPHICAL
     };
 
-    struct cursor_t {
-        int x;
-        int y;
-    };
-
-    struct search_t {
-        bool active = false;
-        std::vector<cursor_t> positions;
-        std::map<size_t, std::vector<size_t>> matches;
-        std::string target;
-        size_t targetSize;
-    };
-
-    struct undoState_t {
+    struct UndoState {
         std::string add;
         std::vector<cake::Line> lines;
-        editor::cursor_t cur;
+        Cursor cursor;
     };
 
-    class Editor {
-    private:
-        config::config_t conf;
+    struct State {
+        Window window;
+        EditorMode mode;
+        Cursor cursor;
+        UndoState undo;
+        SearchState search;
+    };
 
-        struct termios term;
-        cake::Cake cake;
-
-        cursor_t cur;
-        MODE mode;
-        std::string path;
-        search_t searchState;
-
-        int screenRows, screenCols;
-
-        std::vector<undoState_t> undoStack;
-        std::vector<undoState_t> redoStack;
-
-        void drawRows() const;
-        void drawStatusBar() const;
-        void moveCursor() const;
-
-        void pushUndo();
-        void restoreState(const undoState_t& state);
-
+    class TextEditor {
     public:
-        Editor(const config::config_t conf);
-        ~Editor();
+        State state{};
+        std::string path;
+        cake::Cake cake;
+        config::Config cfg;
 
-        void openFile(const std::string& path);
-        void refreshScreen() const;
+        std::vector<UndoState> undoStack;
+        std::vector<UndoState> redoStack;
 
-        int handleWriting(char c);
+        TextEditor(config::Config& cfg);
+        ~TextEditor();
 
-        bool isWritingMode() const;
+        void openFile(const std::string &path);
+        void closeFile();
 
-        void setMode(MODE mode);
+        void render();
 
-        std::string getPath() const;
-        MODE getMode() const;
-        cake::Cake &getCake();
-        cursor_t &getCursor();
-        search_t &getSearchState();
-        config::config_t getConfig();
+        bool handle();
 
         void undo();
         void redo();
 
-        Editor(const Editor&) = delete;
-        Editor& operator=(const Editor&) = delete;
+        void pushUndo();
+
+        TextEditor(const TextEditor&) = delete;
+        TextEditor& operator=(const TextEditor&) = delete;
+    private:
+        void drawRows() const;
+        void moveCursor() const;
+        void drawStatusBar() const;
     };
 
-}
+};
 
 #endif // EDITOR_H

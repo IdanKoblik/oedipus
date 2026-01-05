@@ -1,66 +1,117 @@
 #include "listeners/keyboard_listener.h"
 
-#include <cstring>
-
-#include "kmp.h"
-#include "terminal.h"
-#include "events/move_event.h"
+#include "events/movement_event.h"
 #include "events/search_event.h"
-#include "tui/alert.h"
-#include "tui/menu.h"
+#include "tui/prompt.h"
 
-#define MOVE_CHARS_SIZE 5
-const char moveChars[MOVE_CHARS_SIZE] = { 'h', 'j', 'k', 'l', 'n' };
+#define MOVE_SIZE 4
+static const char movementBinds[MOVE_SIZE] = {'h', 'j', 'k', 'l'};
+
+constexpr char modeBind = CTRL_KEY('k');
 
 namespace listener {
 
-    static void handlePhilosophicalMode(const event::KeyboardEvent& e, editor::Editor &editor, event::EventDispatcher &dispatcher);
-
-    void KeyboardListener::handle(const event::KeyboardEvent& e) {
-        if (e.getKey() == editor.getConfig().keybindings[config::SWITCH_MOVE].shortcut) {
-            editor::MODE next = editor.getMode() == editor::WRITING
+    void KeyboardListener::handle(const event::KeyboardEvent &e) {
+        if (e.key == modeBind) {
+            editor::EditorMode mode = this->editor.state.mode == editor::WRITING
                 ? editor::PHILOSOPHICAL
                 : editor::WRITING;
 
-            event::ModeEvent modeEvent(next);
-            dispatcher.fire(modeEvent);
-
+            event::ModeEvent event(mode);
+            event::EventDispatcher::instance().fire(event);
             return;
         }
 
-        if (editor.getMode() == editor::PHILOSOPHICAL) {
-            handlePhilosophicalMode(e, editor, dispatcher);
+        if (this->editor.state.mode == editor::PHILOSOPHICAL) {
+            handlePhilosophicalMode(e.key, this->editor);
             return;
         }
+
+        handleWritingMode(e.key, this->editor);
     }
 
-    static void handlePhilosophicalMode(const event::KeyboardEvent& e, editor::Editor &editor, event::EventDispatcher &dispatcher) {
-        if (e.getKey() == editor.getConfig().keybindings[config::UNDO].shortcut) {
+    void KeyboardListener::handlePhilosophicalMode(const char key, editor::TextEditor& editor) {
+        if (key == editor.cfg.keybindings[config::SEARCH_MOVE].shortcut) {
+            const std::string target = tui::prompt(editor.state.window, "Search", "Enter target to search:");
+
+            event::SearchEvent event(target);
+            event::EventDispatcher::instance().fire(event);
+
+            return;
+        }
+
+        if (key == editor.cfg.keybindings[config::UNDO].shortcut) {
             editor.undo();
             return;
         }
 
-        if (e.getKey() == editor.getConfig().keybindings[config::REDO].shortcut) {
+        if (key == editor.cfg.keybindings[config::REDO].shortcut) {
             editor.redo();
             return;
         }
 
-        if (e.getKey() == editor.getConfig().keybindings[config::SEARCH_MOVE].shortcut) {
-            std::string target = tui::prompt("Search ", "Target: ");
+        for (char bind : movementBinds) {
+            if (bind == key) {
+                event::MovementEvent event(key);
+                event::EventDispatcher::instance().fire(event);
+                break;
+            }
+        }
+    }
 
-            event::SearchEvent event(target, target.size());
-            dispatcher.fire(event);
+    void KeyboardListener::handleWritingMode(const char key, editor::TextEditor& editor) {
+        Cursor& cursor = editor.state.cursor;
+        if (isprint(key)) {
+            editor.pushUndo();
+            editor.redoStack.clear();
+
+            editor.cake.insertChar(cursor.x - 1, cursor.y, key);
+            cursor.x++;
+            return;
+        }
+
+        if (key == BACKSPACE || key == '\b') {
+            if (cursor.x > 1 || cursor.y > 0) {
+                editor.pushUndo();
+                editor.redoStack.clear();
+            }
+
+            if (cursor.x > 1) {
+                editor.cake.deleteChar(cursor.x - 1, cursor.y);
+                cursor.x--;
+                return;
+            }
+
+            if (cursor.y > 0) {
+                editor.cake.removeLine(cursor.y);
+                cursor.y--;
+                cursor.x = editor.cake.lineLength(cursor.y) + 1;
+            }
 
             return;
         }
 
-        for (int i = 0; i < MOVE_CHARS_SIZE; i++) {
-            if (e.getKey() == moveChars[i]) {
-                event::MovementEvent moveEvent(e.getKey());
-                dispatcher.fire(moveEvent);
+        if (key == '\r') {
+            editor.pushUndo();
+            editor.redoStack.clear();
 
-                break;
+            editor.cake.insertNewLine(cursor.x - 1, cursor.y);
+            cursor.y++;
+            cursor.x = 1;
+
+            return;
+        }
+
+        if (key == '\t') {
+            editor.pushUndo();
+            editor.redoStack.clear();
+
+            for (int i = 0; i < editor.cfg.settings[config::SETTING_COUNT].value; i++) {
+                editor.cake.insertChar(cursor.x - 1, cursor.y, ' ');
+                cursor.x++;
             }
+
+            return;
         }
     }
 

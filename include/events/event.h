@@ -13,13 +13,27 @@ namespace event {
     };
 
     class EventDispatcher {
-        std::vector<listener::IListenerBase*> listeners;
-
     public:
-        void registerListener(listener::IListenerBase* l);
-        void fire(IEvent& event);
-    };
+        static EventDispatcher& instance() {
+            static EventDispatcher instance;
+            return instance;
+        }
 
+        EventDispatcher() = default;
+        ~EventDispatcher() = default;
+
+        void registerListener(listener::IListenerBase *l);
+
+        void fire(IEvent& event) const;
+
+        EventDispatcher(const EventDispatcher&) = delete;
+        EventDispatcher& operator=(const EventDispatcher&) = delete;
+
+        EventDispatcher(EventDispatcher&&) = delete;
+        EventDispatcher& operator=(EventDispatcher&&) = delete;
+    private:
+        std::vector<listener::IListenerBase*> listeners;
+    };
 }
 
-#endif
+#endif // EVENT_H

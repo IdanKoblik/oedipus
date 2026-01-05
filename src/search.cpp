@@ -1,13 +1,8 @@
-#include "kmp.h"
+#include "search.h"
 
-#include <iostream>
-#include <vector>
+namespace search {
 
-#include "tui/alert.h"
-
-namespace kmp {
-
-    std::vector<int> computeLPS(const std::string& pattern) {
+    static std::vector<int> computeLPS(const std::string& pattern) {
         std::vector<int> lps(pattern.size(), 0);
 
         int len = 0;
@@ -31,7 +26,7 @@ namespace kmp {
         return lps;
     }
 
-    std::vector<size_t> search(
+    std::vector<size_t> kmp(
         const std::string& text,
         const std::string& pattern
     ) {

@@ -1,10 +1,11 @@
-#ifndef WINDOW_H
-#define WINDOW_H
+#ifndef DRAW_H
+#define DRAW_H
 
-#include <string>
 #include <vector>
+#include <string>
+#include "terminal.h"
 
-namespace window {
+namespace tui {
 
     static constexpr const char* TL = "┌";
     static constexpr const char* TR = "┐";
@@ -13,17 +14,14 @@ namespace window {
     static constexpr const char* H  = "─";
     static constexpr const char* V  = "│";
 
-    void getWindowSize(int &rows, int &cols);
-
     void drawLine(const std::string& line, const std::vector<size_t>& matches, size_t len);
 
-    void writeStr(const std::string &s);
     void moveCursor(int r, int c);
 
     void drawBox(int x, int y, int w, int h);
-    void drawCenteredBox(int w, int h, int& outX, int& outY);
 
-    void clear();
+    void drawCenteredBox(const Window& window, int w, int h, int& outX, int& outY);
+
 }
 
-#endif //WINDOW_H
+#endif // DRAW_H

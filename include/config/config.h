@@ -1,5 +1,5 @@
-#ifndef SETTINGS_H
-#define SETTINGS_H
+#ifndef CONFIG_H
+#define CONFIG_H
 
 #include <fstream>
 #include <string>
@@ -8,11 +8,11 @@
 #include <array>
 
 namespace config {
+
     enum KeyBinding {
         UNDO,
         REDO,
         SEARCH_MOVE,
-        SWITCH_MOVE,
         KEYBINDING_COUNT
     };
 
@@ -21,25 +21,25 @@ namespace config {
         SETTING_COUNT
     };
 
-    struct keyBinding_t {
+    struct KeyBinding_t {
         KeyBinding key{};
         char shortcut{};
     };
 
     template<typename T>
-    struct setting_t {
+    struct Setting_t {
         Setting setting{};
         T value{};
     };
 
-    struct config_t {
-        std::array<keyBinding_t, KEYBINDING_COUNT> keybindings;
-        std::array<setting_t<int>, SETTING_COUNT> settings;
+    struct Config {
+        std::array<KeyBinding_t, KEYBINDING_COUNT> keybindings;
+        std::array<Setting_t<int>, SETTING_COUNT> settings;
 
-        config_t();
+        Config();
     };
 
-    void load_config(const std::string& path, config_t& cfg);
+    void load_config(const std::string& path, Config& cfg);
 }
 
-#endif // SETTINGS_H
+#endif // CONFIG_H

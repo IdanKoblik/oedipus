@@ -9,15 +9,15 @@
 namespace listener {
 
     class KeyboardListener : public IListener<event::KeyboardEvent> {
-    private:
-        editor::Editor& editor;
-        event::EventDispatcher& dispatcher;
-
     public:
-        KeyboardListener(editor::Editor& e, event::EventDispatcher& d)
-            : editor(e), dispatcher(d) {}
+        editor::TextEditor& editor;
+
+        explicit KeyboardListener(editor::TextEditor& e) : editor(e) {}
 
         void handle(const event::KeyboardEvent& e) override;
+    private:
+        static void handlePhilosophicalMode(const char key, editor::TextEditor& editor);
+        static void handleWritingMode(const char key, editor::TextEditor& editor);
     };
 
 }

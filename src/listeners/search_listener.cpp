@@ -1,25 +1,24 @@
 #include "listeners/search_listener.h"
 
-#include "kmp.h"
+#include <cstring>
+#include "search.h"
 
 namespace listener {
 
     void SearchListener::handle(const event::SearchEvent &e) {
-        if (editor.getMode() == editor::WRITING)
-            return;
+        SearchState& searchState = editor.state.search;
+        const std::vector<std::string> lines = editor.cake.getLines();
 
-        editor::search_t &searchState = editor.getSearchState();
-        auto lines = editor.getCake().getLines();
         for (size_t y = 0; y < lines.size(); ++y) {
             const std::string& line = lines[y];
-            std::vector<size_t> res = kmp::search(line, e.getTarget());
+            std::vector<size_t> res = search::kmp(line, e.target);
             if (res.empty())
                 continue;
 
-            searchState.matches[y] = res;
-            searchState.positions.push_back(editor::cursor_t{res[0], y});
-            searchState.targetSize = e.getTargetSize();
             searchState.active = true;
+            searchState.matches[y] = res;
+            searchState.positions.push_back(Cursor{res[0], y});
+            searchState.targetSize = strlen(e.target.c_str());
         }
     }
 

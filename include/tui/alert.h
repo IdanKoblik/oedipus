@@ -3,18 +3,20 @@
 
 #include <string>
 
-#define ALERT_HEIGHT 9
-#define ALERT_WIDTH 60
+#include "terminal.h"
 
 namespace tui {
 
     enum AlertType {
         ERROR,
         WARNING,
-        NOTIFICATION,
+        INFO,
+        UNKNOWN
     };
 
-    bool alert(const std::string &msg, AlertType alertType);
+    std::string parseType(AlertType type);
+
+    bool alert(const Window& window, const std::string &msg, AlertType alertType);
 
 }
 

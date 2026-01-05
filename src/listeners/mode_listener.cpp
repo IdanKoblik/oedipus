@@ -2,12 +2,12 @@
 
 namespace listener {
 
-    void ModeListener::handle(const event::ModeEvent& e) {
-        editor.setMode(e.getMode());
-        editor.getSearchState() = {};
+    void ModeListener::handle(const event::ModeEvent &e) {
+        this->editor.state.mode = e.mode;
+        this->editor.state.search = {};
 
-        if (e.getMode() == editor::PHILOSOPHICAL)
-            editor.getCake().saveToFile(editor.getPath());
+        if (e.mode == editor::PHILOSOPHICAL)
+            this->editor.cake.saveToFile(this->editor.path);
     }
 
 }

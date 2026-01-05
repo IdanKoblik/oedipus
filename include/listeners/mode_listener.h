@@ -8,11 +8,10 @@
 namespace listener {
 
     class ModeListener : public IListener<event::ModeEvent> {
-    private:
-        editor::Editor& editor;
-
     public:
-        explicit ModeListener(editor::Editor& e) : editor(e) {}
+        editor::TextEditor& editor;
+
+        explicit ModeListener(editor::TextEditor& e) : editor(e) {}
 
         void handle(const event::ModeEvent& e) override;
     };

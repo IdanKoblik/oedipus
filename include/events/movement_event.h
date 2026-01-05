@@ -1,20 +1,19 @@
-#ifndef MOVE_EVENT_H
-#define MOVE_EVENT_H
+#ifndef MOVEMENT_EVENT_H
+#define MOVEMENT_EVENT_H
 
+#include "event.h"
 #include "keyboard_event.h"
 
 namespace event {
-
-    class MovementEvent : public KeyboardEvent {
+    class MovementEvent final : public KeyboardEvent {
     public:
-        explicit MovementEvent(char k) : KeyboardEvent(k) {}
+        explicit MovementEvent(const char k) : KeyboardEvent(k) {}
 
         void dispatchTo(listener::IListenerBase* l) override  {
             if (auto* typed =dynamic_cast<listener::IListener<MovementEvent>*>(l))
                 typed->handle(*this);
         }
     };
-
 }
 
-#endif // MOVE_EVENT_H
+#endif // MOVEMENT_EVENT_H

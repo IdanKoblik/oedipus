@@ -6,8 +6,7 @@
 #define MENU_HEIGHT 15
 #define MENU_WIDTH 50
 
-#define PROMPT_HEIGHT 11
-#define PROMPT_WIDTH 70
+struct Window;
 
 namespace tui {
 
@@ -17,9 +16,7 @@ namespace tui {
         EXIT = 2
     };
 
-    Options showMenu();
-
-    std::string prompt(const std::string &title, const std::string &prompt);
+    Options showMenu(const Window& window);
 
 }
 

@@ -6,7 +6,7 @@ namespace event {
         listeners.push_back(l);
     }
 
-    void EventDispatcher::fire(IEvent& event) {
+    void EventDispatcher::fire(IEvent& event) const {
         for (auto* l : listeners)
             event.dispatchTo(l);
     }

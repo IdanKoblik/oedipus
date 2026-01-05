@@ -1,6 +1,6 @@
-#include "settings/config.h"
+#include "config/config.h"
 
-#include "terminal.h"
+#include "editor.h"
 
 namespace config {
 
@@ -25,18 +25,17 @@ namespace config {
         return 0;
     }
 
-    config_t::config_t() {
+    Config::Config() {
         keybindings[UNDO]        = { UNDO,        'u' };
         keybindings[REDO]        = { REDO,        'r' };
         keybindings[SEARCH_MOVE] = { SEARCH_MOVE, '/' };
-        keybindings[SWITCH_MOVE] = { SWITCH_MOVE, CTRL_KEY('k') };
         settings[TAB] = { TAB, 4 };
     }
 
-    void load_config(const std::string& path, config_t& cfg) {
+    void load_config(const std::string& path, Config& cfg) {
         std::ifstream file(path);
         if (!file.is_open())
-            return;
+            throw std::runtime_error("Cannot find config file");
 
         enum class Section { NONE, KEYBINDING, OPTIONS };
         Section current = Section::NONE;
@@ -46,7 +45,6 @@ namespace config {
             {"UNDO", UNDO},
             {"REDO", REDO},
             {"SEARCH_MOVE", SEARCH_MOVE},
-            {"SWITCH_MOVE", SWITCH_MOVE},
         };
 
         const std::unordered_map<std::string, Setting> setting_map = {

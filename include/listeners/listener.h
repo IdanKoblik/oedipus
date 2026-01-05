@@ -11,7 +11,6 @@ namespace listener {
     struct IListener : IListenerBase {
         virtual void handle(const E&) = 0;
     };
-
 }
 
 #endif // LISTENER_H

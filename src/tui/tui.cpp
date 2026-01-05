@@ -1,22 +1,13 @@
-#include "window.h"
+#include "tui/tui.h"
 
 #include <cstring>
-#include <stdexcept>
 #include <unistd.h>
-#include <sys/ioctl.h>
+#include <vector>
 
 #include "ansi.h"
+#include "terminal.h"
 
-namespace window {
-
-    void getWindowSize(int &rows, int &cols) {
-        struct winsize ws;
-        if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1)
-            throw std::runtime_error("ioctl failed");
-
-        rows = ws.ws_row;
-        cols = ws.ws_col;
-    }
+namespace tui {
 
     void drawLine(const std::string& line, const std::vector<size_t>& matches, size_t len) {
         size_t pos = 0;
@@ -27,20 +18,15 @@ namespace window {
 
             write(STDOUT_FILENO, line.data() + pos, idx - pos);
 
-            write(STDOUT_FILENO, ansi::SELECTED_CYAN, strlen(ansi::SELECTED_CYAN));
+            writeStr(ansi::SELECTED_CYAN);
             write(STDOUT_FILENO, line.data() + idx, len);
-            write(STDOUT_FILENO, ansi::NON_SELECTED, strlen(ansi::NON_SELECTED));
+            writeStr(ansi::NON_SELECTED);
 
             pos = idx + len;
         }
 
         write(STDOUT_FILENO, line.data() + pos, line.size() - pos);
-
-        write(STDOUT_FILENO, ansi::CRLF, strlen(ansi::CRLF));
-    }
-
-    void writeStr(const std::string &s) {
-        write(STDOUT_FILENO, s.c_str(), s.size());
+        writeStr(ansi::CRLF);
     }
 
     void moveCursor(int r, int c) {
@@ -70,17 +56,10 @@ namespace window {
         writeStr(BR);
     }
 
-    void drawCenteredBox(int w, int h, int& outX, int& outY) {
-        int rows, cols;
-        getWindowSize(rows, cols);
-
-        outX = (cols - w) / 2;
-        outY = (rows - h) / 2;
+    void drawCenteredBox(const Window& window, int w, int h, int& outX, int& outY) {
+        outX = (window.cols - w) / 2;
+        outY = (window.rows - h) / 2;
         drawBox(outX, outY, w, h);
-    }
-
-    void clear() {
-        writeStr(ansi::CLEAR);
     }
 
 }

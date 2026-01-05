@@ -7,11 +7,10 @@
 
 namespace listener {
     class SearchListener : public IListener<event::SearchEvent> {
-    private:
-        editor::Editor& editor;
-
     public:
-        explicit SearchListener(editor::Editor& e) : editor(e) {}
+        editor::TextEditor& editor;
+
+        explicit SearchListener(editor::TextEditor& e) : editor(e) {}
 
         void handle(const event::SearchEvent& e) override;
     };

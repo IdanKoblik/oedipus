@@ -1,8 +1,9 @@
 #include "tui/alert.h"
 
 #include <unistd.h>
-#include <sys/ioctl.h>
-#include "window.h"
+
+#include "terminal.h"
+#include "tui/tui.h"
 
 namespace tui {
 
@@ -10,25 +11,25 @@ namespace tui {
         switch (type) {
             case ERROR: return "ERROR";
             case WARNING: return "WARNING";
-            case NOTIFICATION: return "NOTIFICATION";
+            case INFO: return "INFO";
             default: return "UNKNOWN";
         }
     }
 
-    bool alert(const std::string &msg, AlertType alertType) {
-        window::clear();
+    bool alert(const Window& window, const std::string &msg, AlertType alertType) {
+        clear();
 
         int x, y;
-        window::drawCenteredBox(50, 7, x, y);
+        drawCenteredBox(window, 50, 7, x, y);
 
-        window::moveCursor(y + 1, x + 2);
-        window::writeStr(parseType(alertType));
+        moveCursor(y + 1, x + 2);
+        writeStr(parseType(alertType));
 
-        window::moveCursor(y + 3, x + (50 - msg.size()) / 2);
-        window::writeStr(msg);
+        moveCursor(y + 3, x + (50 - msg.size()) / 2);
+        writeStr(msg);
 
-        window::moveCursor(y + 5, x + 13);
-        window::writeStr("Press any key to continue");
+        moveCursor(y + 5, x + 13);
+        writeStr("Press any key to continue");
 
         char c;
         if (read(STDIN_FILENO, &c, 1) <= 0)
@@ -36,5 +37,4 @@ namespace tui {
 
         return true;
     }
-
 }

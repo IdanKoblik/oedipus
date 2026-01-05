@@ -1,37 +1,82 @@
 #include "editor.h"
 
-#include <unistd.h>
 #include <cstring>
-#include <stdexcept>
-#include <cctype>
+#include <random>
+#include <unistd.h>
 
 #include "ansi.h"
-#include "window.h"
-#include "terminal.h"
+#include "events/event.h"
+#include "events/keyboard_event.h"
+#include "tui/tui.h"
 
 namespace editor {
 
-    Editor::Editor(const config::config_t config) {
-        this->conf = config;
-        mode = PHILOSOPHICAL;
-        if (terminal::enableRawMode(&term) == -1)
-            throw std::runtime_error(std::strerror(errno));
+    TextEditor::TextEditor(config::Config& cfg) {
+        this->cfg = cfg;
 
-        window::getWindowSize(screenRows, screenCols);
+        Window window = windowSize();
+        writeStr(std::to_string(window.rows));
+        writeStr(std::to_string(window.cols));
+
+        this->state = State{
+            window,
+            PHILOSOPHICAL,
+            Cursor{1, 0},
+            {},
+            {}
+        };
+
+        writeStr(ansi::SHOW_CURSOR);
+    }
+
+    TextEditor::~TextEditor() {
+        this->closeFile();
+    }
+
+    void TextEditor::openFile(const std::string &path) {
+        this->path = path;
+        this->cake.loadFromFile(path);
+    }
+
+    void TextEditor::closeFile() {
         write(STDOUT_FILENO, ansi::SHOW_CURSOR, strlen(ansi::SHOW_CURSOR));
     }
 
-    Editor::~Editor() {
-        write(STDOUT_FILENO, ansi::SHOW_CURSOR, strlen(ansi::SHOW_CURSOR));
-        terminal::disableRawMode(&term);
+    bool TextEditor::handle() {
+        char c;
+        ssize_t n = read(STDIN_FILENO, &c, 1);
+        if (n == 0)
+            return true;
+
+        if (n == -1)
+            return false;
+
+        if (c == CTRL_KEY('q'))
+            return false;
+
+        event::KeyboardEvent event(c);
+        event::EventDispatcher::instance().fire(event);
+
+        return true;
     }
 
-    void Editor::drawRows() const {
-        const int totalLines = static_cast<int>(cake.lineCount());
+    void TextEditor::render() {
+        writeStr(ansi::HIDE_CURSOR);
+        writeStr(ansi::CURSOR_HOME);
+
+        drawRows();
+        drawStatusBar();
+        moveCursor();
+
+        writeStr(ansi::SHOW_CURSOR);
+    }
+
+    void TextEditor::drawRows() const {
+        const int totalLines = static_cast<int>(this->cake.lineCount());
         const int numberWidth = std::to_string(totalLines).length();
 
-        for (int y = 0; y < screenRows - 1; y++) {
-            write(STDOUT_FILENO, ansi::CLEAR_LINE, strlen(ansi::CLEAR_LINE));
+        for (int y = 0; y < this->state.window.rows - 1; y++) {
+            writeStr(ansi::CLEAR_LINE);
 
             if (y < totalLines) {
                 const std::string content = cake.renderLine(y);
@@ -42,12 +87,12 @@ namespace editor {
                 prefix += std::to_string(y + 1);
                 prefix += " ";
 
+                SearchState searchState = this->state.search;
                 auto it = searchState.matches.find(y);
-
                 if (searchState.active && it != searchState.matches.end()) {
                     write(STDOUT_FILENO, prefix.data(), prefix.size());
 
-                    window::drawLine(
+                    tui::drawLine(
                         content,
                         it->second,
                         searchState.targetSize
@@ -60,188 +105,86 @@ namespace editor {
                 write(STDOUT_FILENO, line.data(), line.size());
             }
 
-            write(STDOUT_FILENO, ansi::CRLF, 2);
+            writeStr(ansi::CRLF);
         }
     }
 
-    void Editor::drawStatusBar() const {
-        write(STDOUT_FILENO, ansi::INVERT_COLORS, strlen(ansi::INVERT_COLORS));
+    void TextEditor::drawStatusBar() const {
+        writeStr(ansi::INVERT_COLORS);
 
         std::string status =
                 " oedipus | " +
-                std::string(mode == WRITING ? "WRITING" : "PHILOSOPHICAL") +
+                std::string(this->state.mode == WRITING ? "WRITING" : "PHILOSOPHICAL") +
                 " | Ctrl-K toggle | Ctrl-Q quit ";
 
-        if (static_cast<int>(status.size()) > screenCols)
-            status.resize(screenCols);
+        const size_t cols = this->state.window.cols;
+        if (static_cast<int>(status.size()) > cols)
+            status.resize(cols);
 
         write(STDOUT_FILENO, status.c_str(), status.size());
-        while (static_cast<int>(status.size()) < screenCols) {
+        while (static_cast<int>(status.size()) < cols) {
             write(STDOUT_FILENO, " ", 1);
             status.push_back(' ');
         }
 
-        write(STDOUT_FILENO, ansi::RESET_ATTRS, strlen(ansi::RESET_ATTRS));
+        writeStr(ansi::RESET_ATTRS);
     }
 
-    void Editor::moveCursor() const {
+    void TextEditor::moveCursor() const {
         char buf[32];
 
         // +1 for the immutable space after line number
-        int screenX = std::to_string(cake.lineCount()).length() + 1 + cur.x;
-        int screenY = cur.y + 1;
+        const size_t screenX = std::to_string(this->cake.lineCount()).length() + 1 + this->state.cursor.x;
+        const size_t screenY = this->state.cursor.y + 1;
 
-        snprintf(buf, sizeof(buf), "\x1b[%d;%dH", screenY, screenX);
+        snprintf(buf, sizeof(buf), "\x1b[%lu;%luH", screenY, screenX);
         write(STDOUT_FILENO, buf, strlen(buf));
     }
 
-    void Editor::openFile(const std::string& p) {
-        path = p;
-        cake.loadFromFile(p);
-
-        cur = { 1, 0 };
-    }
-
-    void Editor::refreshScreen() const {
-        write(STDOUT_FILENO, ansi::HIDE_CURSOR, strlen(ansi::HIDE_CURSOR));
-        write(STDOUT_FILENO, ansi::CURSOR_HOME, strlen(ansi::CURSOR_HOME));
-
-        drawRows();
-        drawStatusBar();
-        moveCursor();
-
-        write(STDOUT_FILENO, ansi::SHOW_CURSOR, strlen(ansi::SHOW_CURSOR));
-    }
-
-    int Editor::handleWriting(char c) {
-        if (mode != WRITING)
-            return 0;
-
-        if (isprint(c)) {
-            pushUndo();
-            redoStack.clear();
-
-            cake.insertChar(cur.x - 1, cur.y, c);
-            cur.x++;
-            return 0;
-        }
-
-        if (c == BACKSPACE || c == '\b') {
-            if (cur.x > 1 || cur.y > 0) {
-                pushUndo();
-                redoStack.clear();
-            }
-
-            if (cur.x > 1) {
-                cake.deleteChar(cur.x - 1, cur.y);
-                cur.x--;
-                return 0;
-            }
-
-            if (cur.y > 0) {
-                cake.removeLine(cur.y);
-                cur.y--;
-                cur.x = cake.lineLength(cur.y) + 1;
-            }
-
-            return 0;
-        }
-
-        if (c == '\r') {
-            pushUndo();
-            redoStack.clear();
-
-            cake.insertNewLine(cur.x - 1, cur.y);
-            cur.y++;
-            cur.x = 1;
-            return 0;
-        }
-
-        if (c == '\t') {
-            pushUndo();
-            redoStack.clear();
-
-            for (int i = 0; i < conf.settings[config::TAB].value; i++) {
-                cake.insertChar(cur.x - 1, cur.y, ' ');
-                cur.x++;
-            }
-
-            return 0;
-        }
-
-        return 0;
-    }
-
-    bool Editor::isWritingMode() const {
-        return mode == WRITING;
-    }
-
-    void Editor::setMode(const MODE mode) {
-        this->mode = mode;
-    }
-
-    std::string Editor::getPath() const {
-        return path;
-    }
-
-    MODE Editor::getMode() const {
-        return mode;
-    }
-
-    cake::Cake &Editor::getCake() {
-        return cake;
-    }
-
-    cursor_t &Editor::getCursor() {
-        return cur;
-    }
-
-    search_t &Editor::getSearchState() {
-        return searchState;
-    }
-
-    config::config_t Editor::getConfig() {
-        return conf;
-    }
-
-    void Editor::pushUndo() {
-        undoStack.push_back({
-            cake.getAddBuffer(),
-            cake.getLinesRaw(),
-            cur
+    void TextEditor::pushUndo() {
+        this->undoStack.push_back({
+            this->cake.add,
+            this->cake.lines,
+            this->state.cursor
         });
+        this->redoStack.clear();
     }
 
-    void Editor::restoreState(const undoState_t& state) {
-        cake.setAddBuffer(state.add);
-        cake.setLinesRaw(state.lines);
-        cur = state.cur;
-    }
+    void TextEditor::undo() {
+        if (this->undoStack.empty())
+            return;
 
-    void Editor::undo() {
-        if (undoStack.empty()) return;
-
-        redoStack.push_back({
-            cake.getAddBuffer(),
-            cake.getLinesRaw(),
-            cur
+        this->redoStack.push_back({
+            this->cake.add,
+            this->cake.lines,
+            this->state.cursor
         });
 
-        restoreState(undoStack.back());
-        undoStack.pop_back();
+        UndoState snapshot = undoStack.back();
+        this->undoStack.pop_back();
+
+        this->cake.add = snapshot.add;
+        this->cake.lines = snapshot.lines;
+        this->state.cursor = snapshot.cursor;
     }
 
-    void Editor::redo() {
-        if (redoStack.empty()) return;
+
+    void TextEditor::redo() {
+        if (redoStack.empty())
+            return;
 
         undoStack.push_back({
-            cake.getAddBuffer(),
-            cake.getLinesRaw(),
-            cur
+            cake.add,
+            cake.lines,
+            state.cursor
         });
 
-        restoreState(redoStack.back());
+        auto snapshot = redoStack.back();
         redoStack.pop_back();
+
+        cake.add = snapshot.add;
+        cake.lines = snapshot.lines;
+        state.cursor = snapshot.cursor;
     }
 
 }
