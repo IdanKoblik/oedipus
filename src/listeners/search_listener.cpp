@@ -16,6 +16,7 @@ namespace listener {
                 continue;
 
             searchState.active = true;
+            searchState.target = e.target;
             searchState.matches[y] = res;
             searchState.positions.push_back(Cursor{res[0], y});
             searchState.targetSize = strlen(e.target.c_str());

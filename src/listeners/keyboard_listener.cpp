@@ -106,7 +106,7 @@ namespace listener {
             editor.pushUndo();
             editor.redoStack.clear();
 
-            for (int i = 0; i < editor.cfg.settings[config::SETTING_COUNT].value; i++) {
+            for (int i = 0; i < editor.cfg.settings[config::TAB].value; i++) {
                 editor.cake.insertChar(cursor.x - 1, cursor.y, ' ');
                 cursor.x++;
             }

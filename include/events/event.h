@@ -23,6 +23,7 @@ namespace event {
         ~EventDispatcher() = default;
 
         void registerListener(listener::IListenerBase *l);
+        void clearListeners();
 
         void fire(IEvent& event) const;
 

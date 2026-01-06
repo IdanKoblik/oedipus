@@ -67,16 +67,16 @@ void closeEditor(struct termios *term) {
 void registerListeners(editor::TextEditor& editor) {
     event::EventDispatcher& dispatcher = event::EventDispatcher::instance();
 
-    listener::KeyboardListener keyboardListener(editor);
+    static listener::KeyboardListener keyboardListener(editor);
     dispatcher.registerListener(&keyboardListener);
 
-    listener::MovementListener movementListener(editor);
+    static listener::MovementListener movementListener(editor);
     dispatcher.registerListener(&movementListener);
 
-    listener::ModeListener modeListener(editor);
+    static listener::ModeListener modeListener(editor);
     dispatcher.registerListener(&modeListener);
 
-    listener::SearchListener searchListener(editor);
+    static listener::SearchListener searchListener(editor);
     dispatcher.registerListener(&searchListener);
 }
 
