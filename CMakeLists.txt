@@ -10,7 +10,6 @@ enable_testing()
 
 if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     message(STATUS "Building with coverage enabled")
-
     add_compile_options(--coverage -O0 -g)
     add_link_options(--coverage)
 endif()
@@ -22,9 +21,30 @@ FetchContent_Declare(
         GIT_REPOSITORY https://github.com/google/googletest.git
         GIT_TAG v1.17.0
 )
-
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
+
+find_package(Protobuf REQUIRED)
+find_package(absl REQUIRED)
+
+set(PROTO_FILES
+        proto/editor.proto
+)
+
+set(PROTO_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
+file(MAKE_DIRECTORY ${PROTO_GEN_DIR})
+
+protobuf_generate_cpp(
+        GENERATED_PROTO_SRCS
+        GENERATED_PROTO_HDRS
+        ${PROTO_FILES}
+)
+
+set_source_files_properties(
+        ${GENERATED_PROTO_SRCS}
+        ${GENERATED_PROTO_HDRS}
+        PROPERTIES GENERATED TRUE
+)
 
 file(GLOB_RECURSE SOURCES
         CONFIGURE_DEPENDS
@@ -42,6 +62,7 @@ file(GLOB_RECURSE LIB_SOURCES
         src/editor.cpp
         src/terminal.cpp
         src/tui/*.cpp
+        src/net/*.cpp
         include/*.h
 )
 
@@ -50,17 +71,43 @@ file(GLOB_RECURSE TEST_SOURCES
         tests/*.cpp
 )
 
-add_executable(oedipus ${SOURCES})
-target_include_directories(oedipus PRIVATE include)
+add_executable(oedipus
+        ${SOURCES}
+        ${GENERATED_PROTO_SRCS}
+        ${GENERATED_PROTO_HDRS}
+)
+
+target_include_directories(oedipus PRIVATE
+        include
+        ${PROTO_GEN_DIR}
+)
+
+target_link_libraries(oedipus PRIVATE
+        protobuf::libprotobuf
+        absl::base
+        absl::strings
+        absl::log
+        absl::log_internal_check_op
+)
 
 add_executable(oedipus_tests
         ${TEST_SOURCES}
         ${LIB_SOURCES}
+        ${GENERATED_PROTO_SRCS}
+        ${GENERATED_PROTO_HDRS}
 )
 
-target_include_directories(oedipus_tests PRIVATE include)
+target_include_directories(oedipus_tests PRIVATE
+        include
+        ${PROTO_GEN_DIR}
+)
 
 target_link_libraries(oedipus_tests PRIVATE
+        protobuf::libprotobuf
+        absl::base
+        absl::strings
+        absl::log
+        absl::log_internal_check_op
         GTest::gtest
         GTest::gtest_main
         GTest::gmock

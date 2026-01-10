@@ -1,13 +1,16 @@
 #include "listeners/keyboard_listener.h"
 
+#include "events/cwm_event.h"
 #include "events/movement_event.h"
 #include "events/search_event.h"
+#include "tui/menu.h"
 #include "tui/prompt.h"
 
 #define MOVE_SIZE 4
 static const char movementBinds[MOVE_SIZE] = {'h', 'j', 'k', 'l'};
 
 constexpr char modeBind = CTRL_KEY('k');
+constexpr char cwmBind = CTRL_KEY('o'); // TODO config
 
 namespace listener {
 
@@ -31,6 +34,31 @@ namespace listener {
     }
 
     void KeyboardListener::handlePhilosophicalMode(const char key, editor::TextEditor& editor) {
+        if (key == cwmBind) {
+            std::vector<std::pair<tui::CwmOptions, std::string>> options = {
+                {tui::CwmOptions::HOST, "Host"},
+                {tui::CwmOptions::CONNECT, "Connect"}
+            };
+
+            if (editor.state.networking.active)
+                options = {{tui::CwmOptions::DISCONNECT, "Disconnect"}};
+
+            const auto option = tui::showMenu<tui::CwmOptions>(editor.state.window, "Select options", options);
+            if (option == tui::CwmOptions::DISCONNECT) {
+                event::CwmEvent event("", option);
+                event::EventDispatcher::instance().fire(event);
+                return; // TODO handle
+            }
+
+            const std::string title = "Code with me";
+            const std::string msg = "Enter addr";
+            const std::string addr = tui::prompt(editor.state.window, title, msg);
+
+            event::CwmEvent event(addr, option);
+            event::EventDispatcher::instance().fire(event);
+            return;
+        }
+
         if (key == editor.cfg.keybindings[config::SEARCH_MOVE].shortcut) {
             const std::string target = tui::prompt(editor.state.window, "Search", "Enter target to search:");
 

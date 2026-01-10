@@ -3,6 +3,7 @@
 #include <cstring>
 #include <random>
 #include <unistd.h>
+#include <sstream>
 
 #include "ansi.h"
 #include "events/event.h"
@@ -11,7 +12,7 @@
 
 namespace editor {
 
-    TextEditor::TextEditor(config::Config& cfg) {
+    TextEditor::TextEditor(const config::Config& cfg) {
         this->cfg = cfg;
 
         Window window = windowSize();
@@ -23,6 +24,7 @@ namespace editor {
             PHILOSOPHICAL,
             Cursor{1, 0},
             {},
+            {},
             {}
         };
 
@@ -30,6 +32,9 @@ namespace editor {
     }
 
     TextEditor::~TextEditor() {
+        if (state.networking.active)
+            close(state.networking.socket);
+
         this->closeFile();
     }
 
@@ -112,11 +117,17 @@ namespace editor {
     void TextEditor::drawStatusBar() const {
         writeStr(ansi::INVERT_COLORS);
 
-        std::string status =
-                " oedipus | " +
-                std::string(this->state.mode == WRITING ? "WRITING" : "PHILOSOPHICAL") +
-                " | Ctrl-K toggle | Ctrl-Q quit ";
+        std::ostringstream ss;
+        ss << " oedipus | "
+           << (this->state.mode == WRITING ? "WRITING" : "PHILOSOPHICAL")
+           << " | Ctrl-K toggle | Ctrl-Q quit";
 
+        if (state.networking.active) {
+            ss << "| Running host on: "
+               << state.networking.binding.addr;
+        }
+
+        std::string status = ss.str();
         const size_t cols = this->state.window.cols;
         if (static_cast<int>(status.size()) > cols)
             status.resize(cols);

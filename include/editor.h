@@ -8,6 +8,7 @@
 #include "search.h"
 #include "terminal.h"
 #include "config/config.h"
+#include "net/networking.h"
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 #define BACKSPACE 127
@@ -26,11 +27,12 @@ namespace editor {
     };
 
     struct State {
-        Window window;
+        Window window{};
         EditorMode mode;
-        Cursor cursor;
+        Cursor cursor{};
         UndoState undo;
         SearchState search;
+        NetworkingState networking{};
     };
 
     class TextEditor {
@@ -43,7 +45,7 @@ namespace editor {
         std::vector<UndoState> undoStack;
         std::vector<UndoState> redoStack;
 
-        TextEditor(config::Config& cfg);
+        TextEditor(const config::Config& cfg);
         ~TextEditor();
 
         void openFile(const std::string &path);

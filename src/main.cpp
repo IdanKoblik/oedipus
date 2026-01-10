@@ -4,6 +4,7 @@
 #include "editor.h"
 #include "terminal.h"
 #include "events/event.h"
+#include "listeners/cwm_listener.h"
 #include "listeners/keyboard_listener.h"
 #include "listeners/mode_listener.h"
 #include "listeners/movement_listener.h"
@@ -78,15 +79,24 @@ void registerListeners(editor::TextEditor& editor) {
 
     static listener::SearchListener searchListener(editor);
     dispatcher.registerListener(&searchListener);
+
+    static listener::CwmListener cwmListener(editor);
+    dispatcher.registerListener(&cwmListener);
 }
 
 std::string ask() {
     const Window window = windowSize();
-    switch (const tui::Options option = tui::showMenu(window)) {
-        case tui::Options::EXIT: {
+    const auto option = tui::showMenu<tui::FileOptions>(window, "File Options", {
+        {tui::FileOptions::OPEN_FILE, "Open File" },
+        {tui::FileOptions::CREATE_FILE, "Create File" },
+        {tui::FileOptions::EXIT, "Exit" }
+    });
+
+    switch (option) {
+        case tui::FileOptions::EXIT: {
             break;
         }
-        case tui::Options::OPEN_FILE: {
+        case tui::FileOptions::OPEN_FILE: {
             const std::string file = tui::prompt(window, "Open file", "Enter file path:");
             if (std::filesystem::exists(file))
                 return file;
@@ -97,7 +107,7 @@ std::string ask() {
 
             return std::string{};
         }
-        case tui::Options::CREATE_FILE: {
+        case tui::FileOptions::CREATE_FILE: {
             const std::string file = tui::prompt(window, "Create new file", "Enter file name:");
             if (!std::filesystem::exists(file))
                 return file;
