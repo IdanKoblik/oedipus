@@ -2,25 +2,30 @@
 #define NETWORKING_H
 
 #include <string>
+#include <arpa/inet.h>
+#include <thread>
+#include <mutex>
+#include "client.h"
 
 struct NetworkBinding {
     std::string ip;
-    int port;
+    uint16_t port;
     std::string addr;
 };
 
 enum Role {
     CLIENT,
-    SERVER
+    SERVER,
+    EXIT
 };
 
 struct NetworkingState {
-    NetworkBinding binding;
-    int socket;
     Role role;
+    int fd = -1;
     bool active = false;
-};
 
-int startSocket(const NetworkBinding& binding, const Role role);
+    std::thread serverThread;
+    ClientConn client;
+};
 
 #endif // NETWORKING_H

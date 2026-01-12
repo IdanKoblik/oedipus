@@ -1,10 +1,18 @@
 #include "listeners/keyboard_listener.h"
 
-#include "events/cwm_event.h"
 #include "events/movement_event.h"
 #include "events/search_event.h"
 #include "tui/menu.h"
+#include "net/networking.h"
 #include "tui/prompt.h"
+#include <google/protobuf/message.h>
+#include "net/server.h"
+#include "tui/alert.h"
+#include "proto/editor.pb.h"
+#include "net/client.h"
+#include <thread>
+#include "utils/ip.h"
+#include <atomic>
 
 #define MOVE_SIZE 4
 static const char movementBinds[MOVE_SIZE] = {'h', 'j', 'k', 'l'};
@@ -35,27 +43,9 @@ namespace listener {
 
     void KeyboardListener::handlePhilosophicalMode(const char key, editor::TextEditor& editor) {
         if (key == cwmBind) {
-            std::vector<std::pair<tui::CwmOptions, std::string>> options = {
-                {tui::CwmOptions::HOST, "Host"},
-                {tui::CwmOptions::CONNECT, "Connect"}
-            };
+            const NetworkBinding bind = utils::extractBinding("127.0.0.1:9090");
+            startServer(&editor, bind);
 
-            if (editor.state.networking.active)
-                options = {{tui::CwmOptions::DISCONNECT, "Disconnect"}};
-
-            const auto option = tui::showMenu<tui::CwmOptions>(editor.state.window, "Select options", options);
-            if (option == tui::CwmOptions::DISCONNECT) {
-                event::CwmEvent event("", option);
-                event::EventDispatcher::instance().fire(event);
-                return; // TODO handle
-            }
-
-            const std::string title = "Code with me";
-            const std::string msg = "Enter addr";
-            const std::string addr = tui::prompt(editor.state.window, title, msg);
-
-            event::CwmEvent event(addr, option);
-            event::EventDispatcher::instance().fire(event);
             return;
         }
 

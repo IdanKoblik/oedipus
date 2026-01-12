@@ -8,7 +8,10 @@
 #include "ansi.h"
 #include "events/event.h"
 #include "events/keyboard_event.h"
+#include "tui/alert.h"
 #include "tui/tui.h"
+#include "proto/editor.pb.h"
+#include "net/server.h"
 
 namespace editor {
 
@@ -25,17 +28,17 @@ namespace editor {
             Cursor{1, 0},
             {},
             {},
-            {}
         };
 
         writeStr(ansi::SHOW_CURSOR);
     }
 
     TextEditor::~TextEditor() {
-        if (state.networking.active)
-            close(state.networking.socket);
-
         this->closeFile();
+        if (networking.active)
+            closeServer(this);
+
+        state = {};
     }
 
     void TextEditor::openFile(const std::string &path) {
@@ -121,12 +124,6 @@ namespace editor {
         ss << " oedipus | "
            << (this->state.mode == WRITING ? "WRITING" : "PHILOSOPHICAL")
            << " | Ctrl-K toggle | Ctrl-Q quit";
-
-        if (state.networking.active) {
-            ss << "| Running host on: "
-               << state.networking.binding.addr;
-        }
-
         std::string status = ss.str();
         const size_t cols = this->state.window.cols;
         if (static_cast<int>(status.size()) > cols)

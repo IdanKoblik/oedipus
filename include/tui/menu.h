@@ -18,15 +18,14 @@ namespace tui {
     enum class FileOptions {
         OPEN_FILE = 0,
         CREATE_FILE = 1,
-        EXIT = 2
+        CONNECT = 2,
+        EXIT = 3
     };
 
     enum class CwmOptions {
         HOST = 0,
-        CONNECT = 1,
-        DISCONNECT = 3,
+        DISCONNECT = 1,
     };
-
 
     template<typename Enum>
     Enum showMenu(

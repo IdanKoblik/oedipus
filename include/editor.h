@@ -32,12 +32,12 @@ namespace editor {
         Cursor cursor{};
         UndoState undo;
         SearchState search;
-        NetworkingState networking{};
     };
 
     class TextEditor {
     public:
         State state{};
+        NetworkingState networking{};
         std::string path;
         cake::Cake cake;
         config::Config cfg;
@@ -52,7 +52,6 @@ namespace editor {
         void closeFile();
 
         void render();
-
         bool handle();
 
         void undo();

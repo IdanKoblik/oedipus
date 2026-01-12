@@ -1,6 +1,22 @@
 syntax = "proto2";
 
-package editor;
+package oedipus;
+
+message ConnectReq {
+  required uint64 clientId = 1;
+}
+
+message ConnectAck {
+  required bool ok = 1;
+  required string message = 2;
+}
+
+message FileChunk {
+  required uint64 clientId = 1;
+  required uint32 seq = 2;
+  required bytes data = 3;
+  required bool last = 4;
+}
 
 message Cursor {
   required uint32 line = 1;
