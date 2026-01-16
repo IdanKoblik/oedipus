@@ -1,6 +1,7 @@
 #include "config/config.h"
 
 #include "editor.h"
+#include "utils/logger.h"
 
 namespace config {
 
@@ -33,9 +34,12 @@ namespace config {
     }
 
     void load_config(const std::string& path, Config& cfg) {
+        LOG_DEBUG("Loading config from: " + path);
         std::ifstream file(path);
-        if (!file.is_open())
+        if (!file.is_open()) {
+            LOG_ERROR("Cannot open config file: " + path);
             throw std::runtime_error("Cannot find config file");
+        }
 
         enum class Section { NONE, KEYBINDING, OPTIONS };
         Section current = Section::NONE;
@@ -79,6 +83,7 @@ namespace config {
                 }
             }
         }
+        LOG_DEBUG("Config file loaded successfully");
     }
 
 }
