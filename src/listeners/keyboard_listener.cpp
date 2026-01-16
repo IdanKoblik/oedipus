@@ -34,17 +34,17 @@ namespace listener {
         }
 
         if (this->editor.state.mode == editor::PHILOSOPHICAL) {
-            handlePhilosophicalMode(e.key, this->editor);
+            handlePhilosophicalMode(e.key, this->editor, this->ctx);
             return;
         }
 
-        handleWritingMode(e.key, this->editor);
+        handleWritingMode(e.key, this->editor, this->ctx);
     }
 
-    void KeyboardListener::handlePhilosophicalMode(const char key, editor::TextEditor& editor) {
+    void KeyboardListener::handlePhilosophicalMode(const char key, editor::TextEditor& editor, Context& ctx) {
         if (key == cwmBind) {
             const NetworkBinding bind = utils::extractBinding("127.0.0.1:9090");
-            startServer(&editor, bind);
+            ctx.startServer(bind, editor.path);
 
             return;
         }
@@ -77,7 +77,7 @@ namespace listener {
         }
     }
 
-    void KeyboardListener::handleWritingMode(const char key, editor::TextEditor& editor) {
+    void KeyboardListener::handleWritingMode(const char key, editor::TextEditor& editor, Context& ctx) {
         Cursor& cursor = editor.state.cursor;
         if (isprint(key)) {
             editor.pushUndo();

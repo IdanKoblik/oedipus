@@ -3,8 +3,6 @@
 #include <fstream>
 #include <iterator>
 
-#include "editor.h"
-
 namespace cake {
 
     void Cake::loadFromFile(const std::string& path) {

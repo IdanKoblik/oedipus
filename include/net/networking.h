@@ -5,7 +5,7 @@
 #include <arpa/inet.h>
 #include <thread>
 #include <mutex>
-#include "client.h"
+#include <google/protobuf/message.h>
 
 struct NetworkBinding {
     std::string ip;
@@ -13,19 +13,9 @@ struct NetworkBinding {
     std::string addr;
 };
 
-enum Role {
-    CLIENT,
-    SERVER,
-    EXIT
-};
+bool recvProto(int fd, google::protobuf::Message& msg);
 
-struct NetworkingState {
-    Role role;
-    int fd = -1;
-    bool active = false;
+bool sendProto(int fd, const google::protobuf::Message& msg);
 
-    std::thread serverThread;
-    ClientConn client;
-};
 
 #endif // NETWORKING_H

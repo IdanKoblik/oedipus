@@ -9,6 +9,7 @@
 #include "terminal.h"
 #include "config/config.h"
 #include "net/networking.h"
+#include "context.h"
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 #define BACKSPACE 127
@@ -37,15 +38,16 @@ namespace editor {
     class TextEditor {
     public:
         State state{};
-        NetworkingState networking{};
+        NetworkBinding networking{};
         std::string path;
         cake::Cake cake;
         config::Config cfg;
+        Context* ctx;
 
         std::vector<UndoState> undoStack;
         std::vector<UndoState> redoStack;
 
-        TextEditor(const config::Config& cfg);
+        TextEditor(const config::Config& cfg, Context* ctx);
         ~TextEditor();
 
         void openFile(const std::string &path);

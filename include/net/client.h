@@ -2,17 +2,22 @@
 #define CLIENT_H
 
 #include <string>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <google/protobuf/message.h>
+#include "net/networking.h"
 
-struct ClientConn {
+class Client {
+public:
     int fd = -1;
     uint64_t id;
+    bool active = false;
+
+    Client() = default;
+    ~Client() = default;
+
+    void start(const NetworkBinding& binding);
+    void close();
+
+    std::string downloadFile();
 };
-
-bool recvProto(int fd, google::protobuf::Message& msg);
-
-std::string downloadFile(const int fd);
 
 #endif // CLIENT_H

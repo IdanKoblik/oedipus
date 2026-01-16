@@ -17,13 +17,14 @@
 #include "proto/editor.pb.h"
 #include <google/protobuf/message.h>
 #include "net/server.h"
+#include "context.h"
 #include <thread>
 
 static const std::string CONFIG_PATH = std::string(std::getenv("HOME")) + "/.config/oedipus/config.ini";
 
 void closeEditor(struct termios *term);
 void registerListeners(editor::TextEditor& editor);
-std::string ask();
+std::string ask(Context& ctx);
 
 int main(int argc, char **argv) {
     std::cout << CONFIG_PATH << std::endl;
@@ -40,9 +41,10 @@ int main(int argc, char **argv) {
     enableRawMode(&term);
     writeStr("\x1b[?1049h");
 
+    Context ctx;
     std::string file;
     if (argc != 2) {
-        std::string str = ask();
+        std::string str = ask(ctx);
         if (str.empty()) {
             closeEditor(&term);
             return 0;
@@ -51,7 +53,7 @@ int main(int argc, char **argv) {
         file = str;
     } else file = argv[1];
 
-    editor::TextEditor editor(cfg);
+    editor::TextEditor editor(cfg, &ctx);
     registerListeners(editor);
 
     editor.openFile(file);
@@ -60,42 +62,6 @@ int main(int argc, char **argv) {
 
         if (!editor.handle())
             break;
-
-        if (editor.networking.active && editor.networking.role == Role::SERVER) {
-            sockaddr_in clientAddr{};
-            socklen_t len = sizeof(clientAddr);
-            int clientFd = accept(editor.networking.fd, (sockaddr*)&clientAddr, &len);
-            if (clientFd < 0) {
-                perror("accept");
-                continue;
-            }
-
-            oedipus::ConnectReq req;
-            if (!recvProto(clientFd, req)) {
-                std::cerr << "Failed to receive ConnectReq\n";
-                close(clientFd);
-                continue;
-            }
-
-            oedipus::ConnectAck ack;
-            ack.set_ok(true);
-            ack.set_message("Connected");
-            if (!sendProto(clientFd, ack)) {
-                std::cerr << "Failed to send ConnectAck\n";
-                close(clientFd);
-                continue;
-            }
-
-            if (!sendFile(clientFd, editor.path, req.clientid())) {
-                std::cerr << "Failed to send file\n";
-                close(clientFd);
-                continue;
-            }
-
-            shutdown(clientFd, SHUT_WR);
-            close(clientFd);
-            std::cout << "File sent successfully\n";
-        }
     }
 
     closeEditor(&term);
@@ -110,7 +76,7 @@ void closeEditor(struct termios *term) {
 void registerListeners(editor::TextEditor& editor) {
     event::EventDispatcher& dispatcher = event::EventDispatcher::instance();
 
-    static listener::KeyboardListener keyboardListener(editor);
+    static listener::KeyboardListener keyboardListener(editor, *editor.ctx);
     dispatcher.registerListener(&keyboardListener);
 
     static listener::MovementListener movementListener(editor);
@@ -123,52 +89,7 @@ void registerListeners(editor::TextEditor& editor) {
     dispatcher.registerListener(&searchListener);
 }
 
-std::string runCwmClient(
-    Window window,
-    NetworkBinding& bind
-) {
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd < 0)
-        return std::string{};
-
-    sockaddr_in sock{};
-    memset(&sock, 0, sizeof(sock));
-    sock.sin_family = AF_INET;
-    sock.sin_port = htons(bind.port);
-    if (inet_pton(AF_INET, bind.ip.c_str(), &sock.sin_addr) != 1) {
-        close(fd);
-        return std::string{};
-    }
-
-    if (connect(fd, reinterpret_cast<sockaddr*>(&sock), sizeof(sock)) < 0) {
-        close(fd);
-        return std::string{};
-    }
-    
-    oedipus::ConnectReq req;
-    req.set_clientid(1);
-
-    if (!sendProto(fd, req)) {
-        tui::alert(window, "Failed to send ConnectReq", tui::AlertType::ERROR);
-        close(fd);
-        return std::string{};
-    }
-
-    oedipus::ConnectAck ack;
-    if (!recvProto(fd, ack) || !ack.ok()) {
-        tui::alert(window, "Server rejected connection", tui::AlertType::ERROR);
-        close(fd);
-        return std::string{};
-    }
-
-    const std::string file = downloadFile(fd);
-    close(fd);
-
-    tui::alert(window, "File received successfully", tui::AlertType::INFO);
-    return file;
-}
-
-std::string ask() {
+std::string ask(Context& ctx) {
     const Window window = windowSize();
     const auto option = tui::showMenu<tui::FileOptions>(window, "File Options", {
         {tui::FileOptions::OPEN_FILE, "Open File" },
@@ -210,10 +131,14 @@ std::string ask() {
             try {
                 bind = utils::extractBinding(addr);
             } catch (...) {
-                return {};
+                return std::string{};
             }
 
-            return runCwmClient(window, bind);
+            ctx.startClient(bind);
+            if (!ctx.clientRef().active)
+                return std::string{};
+
+            return ctx.clientRef().downloadFile();
         }
 
     }

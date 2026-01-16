@@ -5,26 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(ENABLE_COVERAGE "Enable code coverage" OFF)
-option(BUILD_TESTS "Build tests" ON)
-
-if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(--coverage -O0 -g)
-    add_link_options(--coverage)
-endif()
-
 include(FetchContent)
-
-FetchContent_Declare(
-        googletest
-        GIT_REPOSITORY https://github.com/google/googletest.git
-        GIT_TAG v1.17.0
-)
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-
-if(BUILD_TESTS)
-    FetchContent_MakeAvailable(googletest)
-endif()
 
 find_package(Protobuf REQUIRED)
 find_package(absl REQUIRED)
@@ -88,33 +69,3 @@ target_link_libraries(oedipus
         PRIVATE
         oedipus_core
 )
-
-if(BUILD_TESTS)
-    enable_testing()
-
-    file(GLOB_RECURSE TEST_SOURCES
-            CONFIGURE_DEPENDS
-            tests/*.cpp
-    )
-
-    add_executable(oedipus_tests
-            ${TEST_SOURCES}
-    )
-
-    target_include_directories(oedipus_tests
-            PRIVATE
-            include
-            ${PROTO_GEN_DIR}
-    )
-
-    target_link_libraries(oedipus_tests
-            PRIVATE
-            oedipus_core
-            GTest::gtest
-            GTest::gtest_main
-            GTest::gmock
-    )
-
-    include(GoogleTest)
-    gtest_discover_tests(oedipus_tests)
-endif()

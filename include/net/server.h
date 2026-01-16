@@ -4,13 +4,26 @@
 #include <string>
 #include <cstdint>
 #include <google/protobuf/message.h>
-#include "editor.h"
+#include "net/networking.h"
 
-bool sendProto(int fd, const google::protobuf::Message& msg);
+class Server {
+public:
+    int fd = -1;
+    bool active = false;
+    uint64_t clientId;
+    NetworkBinding binding;
 
-bool sendFile(int fd, const std::string& path, uint64_t clientId);
+    Server() = default;
+    ~Server() = default;
 
-void startServer(editor::TextEditor* editor, const NetworkBinding& bind);
-void closeServer(editor::TextEditor* editor);
+    void start(const NetworkBinding& bind);
+    void close();
+
+    void handle(const std::string& path);
+private:
+    void sendFile(const std::string& path, uint64_t clientId, int clientFd);
+
+    void handleClient(int clientFd, const std::string& path);
+};
 
 #endif // SERVER_H

@@ -15,8 +15,9 @@
 
 namespace editor {
 
-    TextEditor::TextEditor(const config::Config& cfg) {
+    TextEditor::TextEditor(const config::Config& cfg, Context* ctx) {
         this->cfg = cfg;
+        this->ctx = ctx;
 
         Window window = windowSize();
         writeStr(std::to_string(window.rows));
@@ -35,8 +36,8 @@ namespace editor {
 
     TextEditor::~TextEditor() {
         this->closeFile();
-        if (networking.active)
-            closeServer(this);
+        if (this->ctx) 
+            this->ctx->stopAll();
 
         state = {};
     }
@@ -124,6 +125,12 @@ namespace editor {
         ss << " oedipus | "
            << (this->state.mode == WRITING ? "WRITING" : "PHILOSOPHICAL")
            << " | Ctrl-K toggle | Ctrl-Q quit";
+
+        if (ctx->hasServer() && ctx->serverRef().active) {
+            ss << " | Running server on: "
+               << ctx->serverRef().binding.addr;
+        }
+
         std::string status = ss.str();
         const size_t cols = this->state.window.cols;
         if (static_cast<int>(status.size()) > cols)
