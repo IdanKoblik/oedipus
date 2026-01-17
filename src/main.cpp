@@ -1,114 +1,113 @@
-#include <filesystem>
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+#include <unistd.h>
+#include <klogger/logger.h>
 #include <termios.h>
-
-#include "editor.h"
 #include "terminal.h"
-#include "events/event.h"
-#include "listeners/keyboard_listener.h"
-#include "listeners/mode_listener.h"
-#include "listeners/movement_listener.h"
-#include "listeners/search_listener.h"
-#include "tui/alert.h"
-#include "tui/menu.h"
-#include "tui/prompt.h"
+#include "ansi.h"
+#include "editor.h"
+#include "config/config.h"
 
 static const std::string CONFIG_PATH = std::string(std::getenv("HOME")) + "/.config/oedipus/config.ini";
 
-void closeEditor(struct termios *term);
-void registerListeners(editor::TextEditor& editor);
-std::string ask();
+struct {
+    struct termios term;
+    int initialized = 0;
+} term_;
 
-int main(int argc, char **argv) {
-    std::cout << CONFIG_PATH << std::endl;
+void shutdownWrapper(void);
+void signalHandler(int sig);
+void registerSignals();
+
+int main(int argc, char** argv) {   
+    klogger::Logger::instance().init("logs.txt");
+    LOG_INFO("Oedipus editor starting");
 
     config::Config cfg{};
     try {
         config::load_config(CONFIG_PATH, cfg);
+        LOG_INFO("Configuration loaded successfully");
     } catch (const std::exception& e) {
-        std::cerr << "Fatal: " << e.what() << '\n';
-        return 0;
+        LOG_FATAL("Failed to load configuration: " + std::string(e.what()));
+        return 1;
     }
 
-    struct termios term;
-    enableRawMode(&term);
-    writeStr("\x1b[?1049h");
+    enableRawMode(&term_.term);
+    term_.initialized = 1;
 
+    atexit(shutdownWrapper);
+    registerSignals();
+
+    signal(SIGINT, signalHandler);
+    signal(SIGTERM, signalHandler);
+    signal(SIGHUP, signalHandler);
+
+    writeStr(ansi::ENABLE_ALT_BUFFER);
+    LOG_DEBUG("Terminal raw mode enabled");
+
+    std::unique_ptr<Context> ctx = std::make_unique<Context>();
     std::string file;
     if (argc != 2) {
-        std::string str = ask();
-        if (str.empty()) {
-            closeEditor(&term);
-            return 0;
-        }
+        NetworkBinding bind = NetworkBinding{"127.0.0.1", 9090, "127.0.0.1:9090"};
+        ctx->startClient(bind);
+        ctx->clientRef().wait();
+        if (ctx->hasClient())
+            file = ctx->clientRef().downloadFile();
+    } else
+        file = argv[1];
 
-        file = str;
-    } else file = argv[1];
+    LOG_INFO("Opening file: " + file);
 
-    editor::TextEditor editor(cfg);
-    registerListeners(editor);
-
+    editor::TextEditor editor(cfg, std::move(ctx));
     editor.openFile(file);
-    while (true) {
-        editor.render();
 
-        if (!editor.handle())
-            break;
+    int exitCode = 0;
+    try {
+        while (true) {
+            editor.render();
+
+            if (!editor.handle())
+                break;
+        }
+    } catch (const std::exception& e) {
+        LOG_EXCEPTION(e);
+        LOG_FATAL("Program crashed due to exception: " + std::string(e.what()));
+        exitCode = 1;
+    } catch (...) {
+        LOG_UNKNOWN_EXCEPTION();
+        LOG_FATAL("Program crashed due to unknown exception");
+        exitCode = 1;
     }
 
-    closeEditor(&term);
-    return 0;
+    klogger::Logger::instance().shutdown();
+    return exitCode;
 }
 
-void closeEditor(struct termios *term) {
-    writeStr("\x1b[?1049l");
-    disableRawMode(term);
-}
-
-void registerListeners(editor::TextEditor& editor) {
-    event::EventDispatcher& dispatcher = event::EventDispatcher::instance();
-
-    static listener::KeyboardListener keyboardListener(editor);
-    dispatcher.registerListener(&keyboardListener);
-
-    static listener::MovementListener movementListener(editor);
-    dispatcher.registerListener(&movementListener);
-
-    static listener::ModeListener modeListener(editor);
-    dispatcher.registerListener(&modeListener);
-
-    static listener::SearchListener searchListener(editor);
-    dispatcher.registerListener(&searchListener);
-}
-
-std::string ask() {
-    const Window window = windowSize();
-    switch (const tui::Options option = tui::showMenu(window)) {
-        case tui::Options::EXIT: {
-            break;
-        }
-        case tui::Options::OPEN_FILE: {
-            const std::string file = tui::prompt(window, "Open file", "Enter file path:");
-            if (std::filesystem::exists(file))
-                return file;
-
-            bool flag = false;
-            while (!flag)
-                flag = tui::alert(window, "File not found", tui::ERROR);
-
-            return std::string{};
-        }
-        case tui::Options::CREATE_FILE: {
-            const std::string file = tui::prompt(window, "Create new file", "Enter file name:");
-            if (!std::filesystem::exists(file))
-                return file;
-
-            bool flag = false;
-            while (!flag)
-                flag = tui::alert(window, "File already exists", tui::ERROR);
-
-            return std::string{};
-        }
+void shutdownWrapper(void) {
+    if (term_.initialized) {
+        writeStr(ansi::DISABLE_ALT_BUFFER);
+        disableRawMode(&term_.term);
+        term_.initialized = 0;
     }
+}
 
-    return std::string{};
+void signalHandler(int sig) {
+    shutdownWrapper();
+    _exit(128 + sig);
+}
+
+void registerSignals() {
+    struct sigaction sa{};
+    sa.sa_handler = signalHandler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESETHAND;  // Reset handler to default after first call
+
+    sigaction(SIGINT,  &sa, nullptr); // Ctrl+C
+    sigaction(SIGTERM, &sa, nullptr); // kill
+    sigaction(SIGHUP,  &sa, nullptr); // terminal hangup
+    sigaction(SIGSEGV, &sa, nullptr); // segmentation fault
+    sigaction(SIGABRT, &sa, nullptr); // abort
+    sigaction(SIGFPE,  &sa, nullptr); // arithmetic error
+    sigaction(SIGILL,  &sa, nullptr); // illegal instruction
 }

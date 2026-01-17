@@ -10,13 +10,13 @@ struct Window;
 
 namespace tui {
 
-    enum class Options {
-        OPEN_FILE = 0,
-        CREATE_FILE = 1,
-        EXIT = 2
-    };
+enum class Options {
+    OPEN_FILE = 0,
+    CREATE_FILE = 1,
+    EXIT = 2
+};
 
-    Options showMenu(const Window& window);
+Options showMenu(const Window& window);
 
 }
 

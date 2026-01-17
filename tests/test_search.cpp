@@ -1,5 +1,6 @@
+#include "algorithem/search.h"
+
 #include <gtest/gtest.h>
-#include "search.h"
 
 using namespace search;
 
@@ -114,4 +115,3 @@ TEST(SearchTest, KMP_ExactMatch) {
     ASSERT_EQ(result.size(), 1);
     EXPECT_EQ(result[0], 0);
 }
-

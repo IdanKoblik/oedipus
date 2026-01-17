@@ -1,0 +1,49 @@
+syntax = "proto2";
+
+package oedipus;
+
+message ConnectReq {
+  required uint64 clientId = 1;
+}
+
+message ConnectAck {
+  required bool ok = 1;
+  required string message = 2;
+}
+
+message FileChunk {
+  required uint64 clientId = 1;
+  required uint32 seq = 2;
+  required bytes data = 3;
+  required bool last = 4;
+}
+
+message Cursor {
+  required uint32 line = 1;
+  required uint32 column = 2;
+}
+
+message InsertText {
+  required Cursor position = 1;
+  required string text = 2;
+}
+
+message DeleteText {
+  required Cursor position = 1;
+  required uint32 length = 2;
+}
+
+message MoveCursor {
+  required Cursor position = 1;
+}
+
+message EditorOp {
+  required uint64 clientId = 1;
+  required uint64 seq = 2;
+
+  oneof op {
+    InsertText insert = 3;
+    DeleteText delete = 4;
+    MoveCursor move = 5;
+  }
+}

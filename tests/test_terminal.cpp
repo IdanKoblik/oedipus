@@ -1,5 +1,6 @@
-#include <gtest/gtest.h>
 #include "terminal.h"
+
+#include <gtest/gtest.h>
 
 TEST(TerminalTest, WriteStr_DoesNotCrash) {
     EXPECT_NO_THROW(writeStr(""));

@@ -1,7 +1,7 @@
 #ifndef CURSOR_H
 #define CURSOR_H
 
-#include <iostream>
+#include <cstdio>
 
 struct Cursor {
     size_t x;
