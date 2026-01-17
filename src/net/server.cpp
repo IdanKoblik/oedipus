@@ -83,10 +83,19 @@ void Server::start(const NetworkBinding& binding) {
     int flags = fcntl(fd, F_GETFL, 0);
     fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 
-    this->binding = binding;
-    this->fd = fd;
-    this->active = true;
-    LOG_INFO("Server started successfully");
+    {
+        std::lock_guard lock(this->mutex);
+        this->binding = binding;
+        this->fd = fd;
+        this->active = true;
+        LOG_INFO("Server started successfully");
+    }
+    this->cv.notify_all();
+}
+
+void Server::wait() {
+    std::unique_lock lock(this->mutex);
+    this->cv.wait(lock, [&] { return this->active; });
 }
 
 void Server::close() {

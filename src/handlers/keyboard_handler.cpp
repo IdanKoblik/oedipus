@@ -134,8 +134,12 @@ void handlePhilosophicalMode(char c, editor::TextEditor* editor) {
     
     //TODO config
     if (c == CTRL_KEY('o')) {
+        if (editor->ctx->hasServer() && editor->ctx->serverRef().active)
+            return;
+
         NetworkBinding bind = NetworkBinding{"127.0.0.1", 9090, "127.0.0.1:9090"};
         editor->ctx->startServer(bind, editor->filePath);
+        editor->ctx->serverRef().wait();
         
         return;
     }
