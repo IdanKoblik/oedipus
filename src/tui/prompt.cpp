@@ -16,10 +16,12 @@ std::string prompt(const Window& window, const std::string& title, const std::st
     writeStr(title);
     moveCursor(y + 3, x + 2);
     writeStr(msg);
+    
     int inputX = x + 2;
     int inputY = y + 5;
     drawBox(inputX, inputY, PROMPT_WIDTH - 4, 3);
     moveCursor(inputY + 1, inputX + 1);
+
     std::string input;
     while (true) {
         char c;
