@@ -36,6 +36,7 @@ TEST_F(ConfigTest, DefaultConstructor) {
     EXPECT_EQ(cfg.keybindings[REDO].shortcut, 'r');
     EXPECT_EQ(cfg.keybindings[SEARCH_MOVE].key, SEARCH_MOVE);
     EXPECT_EQ(cfg.keybindings[SEARCH_MOVE].shortcut, '/');
+    EXPECT_EQ(cfg.keybindings[CWM_MENU].shortcut, CTRL_KEY('o'));
     EXPECT_EQ(cfg.settings[TAB].setting, TAB);
     EXPECT_EQ(cfg.settings[TAB].value, 4);
 }

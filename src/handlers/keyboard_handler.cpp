@@ -2,7 +2,11 @@
 
 #include <cstring>
 #include "global.h"
+#include "config/config.h"
+#include "tui/alert.h"
+#include "tui/menu.h"
 #include "tui/prompt.h"
+#include "utils/ip.h"
 
 #define MOVE_SIZE 4
 
@@ -132,14 +136,29 @@ void handlePhilosophicalMode(char c, editor::TextEditor* editor) {
     if (editor->state.mode != editor::Mode::PHILOSOPHICAL)
         return;
     
-    //TODO config
-    if (c == CTRL_KEY('o')) {
-        if (editor->ctx->hasServer() && editor->ctx->serverRef().active)
-            return;
+    if (c == editor->cfg.keybindings[config::CWM_MENU].shortcut) {
+        if (editor->ctx->hasServer() && editor->ctx->serverRef().active) {
+            const auto option = tui::showMenu<tui::CwmOptions>(editor->state.window, "Code with me", {
+                {tui::CwmOptions::DISCONNECT, "DISCONNECT" },
+            });
 
-        NetworkBinding bind = NetworkBinding{"127.0.0.1", 9090, "127.0.0.1:9090"};
-        editor->ctx->startServer(bind, editor->filePath);
-        editor->ctx->serverRef().wait();
+            if (option == tui::CwmOptions::DISCONNECT) {
+                editor->ctx->stopServer();
+                return;
+            }
+
+            return;
+        }
+
+        const std::string addr = tui::prompt(editor->state.window, "Open code with me", "Enter server addr:");
+        try {
+            const NetworkBinding binding = utils::extractBinding(addr);
+            editor->ctx->startServer(binding, editor->filePath);
+            editor->ctx->serverRef().wait();
+        } catch (...) {
+            tui::alert(editor->state.window, "Failed to start code with me", tui::AlertType::ERROR);
+            return;
+        }
         
         return;
     }

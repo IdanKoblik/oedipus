@@ -66,7 +66,11 @@ void Server::start(const NetworkBinding& binding) {
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
     addr.sin_port = htons(binding.port);
-    inet_pton(AF_INET, binding.ip.c_str(), &addr.sin_addr);
+    if (inet_pton(AF_INET, binding.ip.c_str(), &addr.sin_addr) <= 0) {
+        ::close(fd);
+        LOG_ERROR("Failed to use givven ip: errno=" + std::to_string(errno));
+        throw std::runtime_error("Cannot use givven ip");
+    }
 
     if (bind(fd, (sockaddr*)&addr, sizeof(addr)) < 0) {
         ::close(fd);

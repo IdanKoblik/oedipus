@@ -28,6 +28,7 @@ namespace config {
         keybindings[UNDO] = { UNDO, 'u' };
         keybindings[REDO] = { REDO, 'r' };
         keybindings[SEARCH_MOVE] = { SEARCH_MOVE, '/' };
+        keybindings[CWM_MENU] = { CWM_MENU, CTRL_KEY('o') }; 
         settings[TAB] = { TAB, 4 };
     }
 
@@ -43,6 +44,7 @@ namespace config {
         const std::unordered_map<std::string, KeyBinding> keybinding_map = {
             {"UNDO", UNDO},
             {"REDO", REDO},
+            {"CWM_MENU", CWM_MENU},
             {"SEARCH_MOVE", SEARCH_MOVE},
         };
 

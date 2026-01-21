@@ -23,8 +23,7 @@ enum class FileOptions {
 };
 
 enum class CwmOptions {
-    HOST = 0,
-    DISCONNECT = 1,
+    DISCONNECT = 0,
 };
 
 template<typename Enum>
