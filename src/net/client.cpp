@@ -77,10 +77,23 @@ void Client::close() {
     this->active = false;
 }
 
+void Client::sendOp(const oedipus::EditorOp& op) {
+    if (!this->active) {
+        LOG_WARN("Attempted to send op but client is not active");
+        return;
+    }
+
+    if (!sendProto(this->fd, op)) {
+        LOG_ERROR("Failed to send EditorOp protobuf message to server");
+    } else {
+        LOG_DEBUG("Sent EditorOp protobuf message to server");
+    }
+}
+
 std::string Client::downloadFile() {
     if (!this->active) {
         LOG_WARN("Attempted to download file but client is not active");
-        return std::string{};
+        return {};
     }
 
     LOG_INFO("Starting file download");
@@ -88,47 +101,26 @@ std::string Client::downloadFile() {
     std::ofstream outFile(filePath, std::ios::binary);
     if (!outFile.is_open()) {
         LOG_ERROR("Failed to open temporary file for download: " + filePath);
-        return std::string{};
+        return {};
     }
 
     uint32_t chunkCount = 0;
+
     while (true) {
-        uint32_t len = 0;
-        ssize_t n = read(fd, &len, sizeof(len));
-        if (n == 0) {
-            LOG_DEBUG("Received EOF during file download");
-            break;
-        }
-
-        if (n < 0) {
-            LOG_ERROR("Read error during file download: errno=" + std::to_string(errno));
-            outFile.close();
-            return std::string{};
-        }
-
-        len = ntohl(len);
-        std::vector<uint8_t> buffer(len);
-        size_t rec = 0;
-        while (rec < len) {
-            ssize_t r = read(fd, buffer.data() + rec, len - rec);
-            if (r <= 0) {
-                LOG_ERROR("Read error while receiving chunk data: errno=" + std::to_string(errno));
-                outFile.close();
-                return std::string{};
-            }
-
-            rec += r;
-        }
-
         oedipus::FileChunk chunk;
-        if (!chunk.ParseFromArray(buffer.data(), buffer.size())) {
-            LOG_ERROR("Failed to parse FileChunk protobuf message");
+
+        // Receive one FileChunk protobuf from the server
+        if (!recvProto(this->fd, chunk)) {
+            LOG_ERROR("recvProto(FileChunk) failed or client disconnected");
             outFile.close();
-            return std::string{};
+            return {};
         }
 
+        // Write the chunk data to file
         outFile.write(chunk.data().data(), chunk.data().size());
         chunkCount++;
+
+        // Check if this is the last chunk
         if (chunk.last()) {
             LOG_INFO("File download completed: " + std::to_string(chunkCount) + " chunks received");
             break;

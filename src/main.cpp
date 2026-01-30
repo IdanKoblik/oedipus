@@ -8,6 +8,7 @@
 #include "ansi.h"
 #include "editor.h"
 #include "config/config.h"
+#include "context.h"
 #include "tui/tui.h"
 #include "tui/menu.h"
 #include "tui/prompt.h"
@@ -139,7 +140,7 @@ std::string ask(Context& ctx) {
         case tui::FileOptions::CREATE_FILE: {
             const std::string file = tui::prompt(window, "Create new file", "Enter file name:");
             if (!std::filesystem::exists(file))
-                return "test.txt";
+                return file;
 
             tui::alert(window, "File already exists", tui::AlertType::ERROR);
             return std::string{};

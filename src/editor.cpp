@@ -5,6 +5,7 @@
 #include "search.h"
 #include "tui/tui.h"
 #include "tui/alert.h"
+#include "context.h"
 #include "handlers/keyboard_handler.h"
 #include <unistd.h>
 #include <string>
@@ -91,6 +92,46 @@ void TextEditor::render() {
     this->moveCursor();
     
     writeStr(ansi::SHOW_CURSOR);
+}
+
+void TextEditor::emitOp(const oedipus::EditorOp& op) {
+    if (op.has_insert()) {
+        const oedipus::InsertText& insert = op.insert();
+
+        for (char c : insert.text()) {
+            if (c == '\n') {
+                size_t line = insert.position().line();
+                size_t column = insert.position().column();
+                this->pieceTable.insertNewLine(column, line);
+                this->state.cursor.y++;
+                this->state.cursor.x = 1;
+            } else {
+                this->pieceTable.insertChar(insert.position().column(), insert.position().line(), c);
+                this->state.cursor.x++;
+            }
+        }
+        
+        return;
+    }
+
+    if (op.has_delete_()) {
+        const oedipus::DeleteText& del = op.delete_();
+        if (del.position().column() > 1) {
+            this->pieceTable.deleteChar(del.position().column(), del.position().line());
+            if (this->state.cursor.x > 1)
+                this->state.cursor.x--;
+        } else {
+            size_t line = del.position().line();
+            if (line > 0) {
+                size_t prevLineLen = this->pieceTable.lineLength(line - 1);
+                this->pieceTable.removeLine(line);
+                this->state.cursor.y--;
+                this->state.cursor.x = prevLineLen + 1;
+            }
+        }
+        
+        return;
+    }
 }
 
 void TextEditor::drawRows() const {

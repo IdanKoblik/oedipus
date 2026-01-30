@@ -4,11 +4,13 @@
 #include <string>
 #include <memory>
 #include "config/config.h"
-#include "context.h"
 #include "terminal.h"
 #include "structs/piece_table.h"
 #include "cursor.h"
+#include "proto/editor.pb.h"
 #include "algorithem/search.h"
+
+class Context;
 
 namespace editor {
 
@@ -51,6 +53,7 @@ public:
     void render();
     bool handle();
 
+    void emitOp(const oedipus::EditorOp& op);
 
     void undo();
     void redo();

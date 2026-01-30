@@ -11,11 +11,11 @@
 #include <errno.h>
 #include <klogger/logger.h>
 
-void Server::handleClient(int clientFd, const std::string& path) {
+void Server::handleClient(int clientFd, const std::string& path, editor::TextEditor* editor) {
     LOG_INFO("New client connected, fd=" + std::to_string(clientFd));
-    std::thread([this, clientFd, path]() {
+    std::thread([this, clientFd, path, editor]() {
         try {
-            oedipus::ConnectReq req;
+            oedipus::ConnectReq req{};
             if (!recvProto(clientFd, req)) {
                 LOG_WARN("Failed to receive ConnectReq from client fd=" + std::to_string(clientFd));
                 ::close(clientFd);
@@ -23,15 +23,23 @@ void Server::handleClient(int clientFd, const std::string& path) {
             }
 
             LOG_DEBUG("Received ConnectReq from client id=" + std::to_string(req.clientid()));
-            oedipus::ConnectAck ack;
+            oedipus::ConnectAck ack{};
             ack.set_ok(true);
             ack.set_message("Connected");
             sendProto(clientFd, ack);
 
+            this->clientFd = clientFd;
+            this->clientId = req.clientid();
             this->sendFile(path, req.clientid(), clientFd);
             while (this->active) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                oedipus::EditorOp op;
+                if (!recvProto(clientFd, op)) {
+                    LOG_INFO("Client disconnected or stream corrupted");
+                    break;
+                }
+                editor->emitOp(op);
             }
+
 
             LOG_INFO("Closing client connection fd=" + std::to_string(clientFd));
             ::close(clientFd);
@@ -112,7 +120,7 @@ void Server::close() {
     ::close(this->fd);
 }
 
-void Server::handle(const std::string& path) {
+void Server::handle(const std::string& path, editor::TextEditor* editor) {
     if (this->fd == -1) {
         LOG_WARN("Server handle called but fd is invalid");
         return;
@@ -134,9 +142,26 @@ void Server::handle(const std::string& path) {
             continue;
         }
     
-        handleClient(clientFd, path);
+        handleClient(clientFd, path, editor);
     }
     LOG_INFO("Server handle loop exited");
+}
+
+void Server::broadcastOp(const oedipus::EditorOp& op) {
+    if (!this->active) {
+        LOG_WARN("Attempted to broadcast op but server is not active");
+        return;
+    }
+
+    if (this->clientFd == -1) {
+        LOG_WARN("No connected clients to broadcast op to");
+        return;
+    }
+
+    LOG_DEBUG("Broadcasting EditorOp to client id=" + std::to_string(op.clientid()));
+    if (!sendProto(this->clientFd, op)) {
+        LOG_ERROR("Failed to send EditorOp to client id=" + std::to_string(op.clientid()));
+    }
 }
 
 void Server::sendFile(const std::string& path, uint64_t clientId, int clientFd) {

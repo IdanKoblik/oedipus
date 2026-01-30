@@ -30,7 +30,6 @@ message InsertText {
 
 message DeleteText {
   required Cursor position = 1;
-  required uint32 length = 2;
 }
 
 message MoveCursor {

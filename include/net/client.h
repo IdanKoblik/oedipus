@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <google/protobuf/message.h>
 #include "net/networking.h"
+#include "proto/editor.pb.h"
 
 class Client {
 public:
@@ -19,6 +20,9 @@ public:
     void start(const NetworkBinding& binding);
     void wait();
     void close();
+    
+    void sendOp(const oedipus::EditorOp& op);
+    void recvOp();
 
     std::string downloadFile();
 private:

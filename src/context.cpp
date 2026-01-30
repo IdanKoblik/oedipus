@@ -1,6 +1,7 @@
 #include "context.h"
 
 #include <klogger/logger.h>
+#include "proto/editor.pb.h"
 
 Context::~Context() {
     this->stopAll();
@@ -49,7 +50,7 @@ Client& Context::clientRef() {
     return *this->client;
 }
 
-void Context::startServer(const NetworkBinding& bind, const std::string& path) {
+void Context::startServer(const NetworkBinding& bind, const std::string& path, editor::TextEditor* editor) {
     if (this->server) {
         LOG_WARN("Attempted to start server but server is already running");
         return;
@@ -59,14 +60,16 @@ void Context::startServer(const NetworkBinding& bind, const std::string& path) {
     this->server = std::make_unique<Server>();
     try {
         this->server->start(bind);
+        this->server->wait();
     } catch (const std::exception& e) {
         LOG_EXCEPTION(e);
         LOG_ERROR("Failed to start server: " + std::string(e.what()));
         throw;
     }
-    this->serverThread = std::thread([this, path] { 
+
+    this->serverThread = std::thread([this, path, editor] { 
         try {
-            server->handle(path);
+            server->handle(path, editor);
         } catch (const std::exception& e) {
             LOG_EXCEPTION(e);
             LOG_ERROR("Server thread crashed: " + std::string(e.what()));
@@ -102,4 +105,16 @@ Server& Context::serverRef() {
 void Context::stopAll() {
     stopClient();
     stopServer();
+}
+
+void Context::pushOp(const oedipus::EditorOp& op) {
+    if (this->hasClient()) {
+        this->clientRef().sendOp(op);
+        return;
+    }
+
+    if (this->hasServer()) {
+        this->serverRef().broadcastOp(op);
+        return;
+    }
 }

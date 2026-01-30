@@ -6,6 +6,7 @@
 #include <string>
 #include "net/client.h"
 #include "net/server.h"
+#include "proto/editor.pb.h"
 
 class Context {
 public:
@@ -18,13 +19,15 @@ public:
     bool hasClient() const;
     Client& clientRef();
 
-    void startServer(const NetworkBinding& bind, const std::string& path);
+    void startServer(const NetworkBinding& bind, const std::string& path, editor::TextEditor* editor);
     void stopServer();
 
     bool hasServer() const;
     Server& serverRef();
 
     void stopAll();
+
+    void pushOp(const oedipus::EditorOp& op);
 
 private:
     std::unique_ptr<Client> client;

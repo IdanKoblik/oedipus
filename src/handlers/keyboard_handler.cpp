@@ -7,6 +7,8 @@
 #include "tui/menu.h"
 #include "tui/prompt.h"
 #include "utils/ip.h"
+#include "context.h"
+#include "proto/editor.pb.h"
 
 #define MOVE_SIZE 4
 
@@ -75,14 +77,22 @@ void handleWritingMode(char c, editor::TextEditor* editor) {
     if (editor->state.mode != editor::Mode::WRITING)
         return;
 
-    Cursor& cursor = editor->state.cursor;
-    pieceTable::Table& pieceTable = editor->pieceTable;
+    Cursor cursor = editor->state.cursor;
 
     if (isprint(c)) {
         editor->pushUndo();
         editor->redoStack.clear();
-        pieceTable.insertChar(cursor.x - 1, cursor.y, c);
-        cursor.x++;
+
+        oedipus::EditorOp op{};
+        op.set_clientid(0);
+        op.set_seq(0);
+
+        op.mutable_insert()->mutable_position()->set_column(cursor.x - 1);
+        op.mutable_insert()->mutable_position()->set_line(cursor.y);
+        op.mutable_insert()->set_text(std::string(1, c));
+
+        editor->emitOp(op);
+        editor->ctx->pushOp(op);
         return;
     }
 
@@ -91,28 +101,50 @@ void handleWritingMode(char c, editor::TextEditor* editor) {
             editor->pushUndo();
             editor->redoStack.clear();
         }
+
         if (cursor.x > 1) {
-            pieceTable.deleteChar(cursor.x - 1, cursor.y);
-            cursor.x--;
+            oedipus::EditorOp op{};
+            op.set_clientid(0);
+            op.set_seq(0);
+
+            op.mutable_delete_()->mutable_position()->set_column(cursor.x - 1);
+            op.mutable_delete_()->mutable_position()->set_line(cursor.y);
+
+            editor->emitOp(op);
+            editor->ctx->pushOp(op);
             return;
         }
+
         if (cursor.y > 0) {
-            pieceTable.removeLine(cursor.y);
-            cursor.y--;
-            cursor.x = pieceTable.lineLength(cursor.y) + 1;
+            oedipus::EditorOp op{};
+            op.set_clientid(0);
+            op.set_seq(0);
+
+            op.mutable_delete_()->mutable_position()->set_column(1);
+            op.mutable_delete_()->mutable_position()->set_line(cursor.y);
+
+            editor->emitOp(op);
+            editor->ctx->pushOp(op);
+            return;
         }
+
         return;
     }
-
 
     if (c == '\r') {
         editor->pushUndo();
         editor->redoStack.clear();
 
-        pieceTable.insertNewLine(cursor.x - 1, cursor.y);
+        oedipus::EditorOp op{};
+        op.set_clientid(0);
+        op.set_seq(0);
 
-        cursor.y++;
-        cursor.x = 1;
+        op.mutable_insert()->mutable_position()->set_column(cursor.x - 1);
+        op.mutable_insert()->mutable_position()->set_line(cursor.y);
+        op.mutable_insert()->set_text("\n");
+
+        editor->emitOp(op);
+        editor->ctx->pushOp(op);
         return;
     }
 
@@ -121,8 +153,16 @@ void handleWritingMode(char c, editor::TextEditor* editor) {
         editor->redoStack.clear();
 
         for (int i = 0; i < editor->cfg.settings[config::TAB].value; i++) {
-            pieceTable.insertChar(cursor.x - 1, cursor.y, ' ');
-            cursor.x++;
+            oedipus::EditorOp op{};
+            op.set_clientid(0);
+            op.set_seq(0);
+
+            op.mutable_insert()->mutable_position()->set_column(cursor.x - 1);
+            op.mutable_insert()->mutable_position()->set_line(cursor.y);
+            op.mutable_insert()->set_text(" ");
+
+            editor->emitOp(op);
+            editor->ctx->pushOp(op);
         }
 
         return;
@@ -153,7 +193,7 @@ void handlePhilosophicalMode(char c, editor::TextEditor* editor) {
         const std::string addr = tui::prompt(editor->state.window, "Open code with me", "Enter server addr:");
         try {
             const NetworkBinding binding = utils::extractBinding(addr);
-            editor->ctx->startServer(binding, editor->filePath);
+            editor->ctx->startServer(binding, editor->filePath, editor);
             editor->ctx->serverRef().wait();
         } catch (...) {
             tui::alert(editor->state.window, "Failed to start code with me", tui::AlertType::ERROR);
