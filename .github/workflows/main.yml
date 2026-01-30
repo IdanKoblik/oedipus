@@ -7,14 +7,8 @@ on:
         description: 'Version to upload'
         required: true
 
-  pull_request:
-  push:
-    branches:
-      - main
-
 jobs:
   publish:
-    needs: testing
     uses: ./.github/workflows/callable.publish.yml
     with:
       VERSION: ${{ inputs.VERSION }}
