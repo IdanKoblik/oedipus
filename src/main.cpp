@@ -62,12 +62,23 @@ int main(int argc, char** argv) {
 
     LOG_INFO("Opening file: " + file);
 
+    if (!file.empty() && ctx->hasClient()) {
+        ctx->clientRef().startRecvThread();
+    }
+
     editor::TextEditor editor(cfg, std::move(ctx));
     editor.openFile(file);
 
     int exitCode = 0;
     try {
         while (true) {
+            if (editor.ctx->hasClient()) {
+                auto ops = editor.ctx->clientRef().getPendingOps();
+                for (auto& op : ops) {
+                    editor.emitOp(op, false);
+                }
+            }
+
             editor.render();
 
             if (!editor.handle())

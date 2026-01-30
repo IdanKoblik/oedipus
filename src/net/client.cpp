@@ -1,6 +1,7 @@
 #include "net/client.h"
 
 #include "proto/editor.pb.h"
+#include "net/networking.h"
 #include "global.h"
 #include <klogger/logger.h>
 #include <unistd.h>
@@ -57,6 +58,7 @@ void Client::start(const NetworkBinding& binding) {
         std::lock_guard lock(this->mutex);
         this->id = 123;
         this->fd = fd;
+        this->binding = binding;
         this->active = true;
         LOG_INFO("Client connection established successfully");
     }
@@ -68,13 +70,54 @@ void Client::wait() {
     this->cv.wait(lock, [&] { return this->active; });
 }
 
+void Client::recvThreadLoop() {
+    while (this->active) {
+        oedipus::EditorOp op;
+        if (!recvProto(this->fd, op)) {
+            LOG_INFO("Recv thread: server disconnected or stream corrupted");
+            break;
+        }
+        std::lock_guard lock(this->queueMutex);
+        this->opQueue.push_back(std::move(op));
+    }
+}
+
+void Client::startRecvThread() {
+    std::lock_guard lock(this->mutex);
+    if (this->recvThreadStarted) {
+        LOG_WARN("Recv thread already started");
+        return;
+    }
+    this->recvThreadStarted = true;
+    this->recvThread = std::thread([this] { this->recvThreadLoop(); });
+    LOG_INFO("Started recv thread for incoming editor ops");
+}
+
+std::vector<oedipus::EditorOp> Client::getPendingOps() {
+    std::lock_guard lock(this->queueMutex);
+    std::vector<oedipus::EditorOp> out;
+    out.reserve(this->opQueue.size());
+    while (!this->opQueue.empty()) {
+        out.push_back(std::move(this->opQueue.front()));
+        this->opQueue.pop_front();
+    }
+    return out;
+}
+
 void Client::close() {
     if (!this->active)
         return;
 
     LOG_INFO("Closing client connection");
-    ::close(this->fd);
     this->active = false;
+    if (this->fd >= 0) {
+        ::close(this->fd);
+        this->fd = -1;
+    }
+    if (this->recvThreadStarted && this->recvThread.joinable()) {
+        this->recvThread.join();
+        this->recvThreadStarted = false;
+    }
 }
 
 void Client::sendOp(const oedipus::EditorOp& op) {
@@ -109,18 +152,15 @@ std::string Client::downloadFile() {
     while (true) {
         oedipus::FileChunk chunk;
 
-        // Receive one FileChunk protobuf from the server
         if (!recvProto(this->fd, chunk)) {
             LOG_ERROR("recvProto(FileChunk) failed or client disconnected");
             outFile.close();
             return {};
         }
 
-        // Write the chunk data to file
         outFile.write(chunk.data().data(), chunk.data().size());
         chunkCount++;
 
-        // Check if this is the last chunk
         if (chunk.last()) {
             LOG_INFO("File download completed: " + std::to_string(chunkCount) + " chunks received");
             break;

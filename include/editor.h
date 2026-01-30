@@ -54,6 +54,7 @@ public:
     bool handle();
 
     void emitOp(const oedipus::EditorOp& op);
+    void emitOp(const oedipus::EditorOp& op, bool updateCursor);
 
     void undo();
     void redo();

@@ -37,7 +37,7 @@ void Server::handleClient(int clientFd, const std::string& path, editor::TextEdi
                     LOG_INFO("Client disconnected or stream corrupted");
                     break;
                 }
-                editor->emitOp(op);
+                editor->emitOp(op, false);
             }
 
 

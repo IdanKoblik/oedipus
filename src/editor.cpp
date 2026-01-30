@@ -95,22 +95,32 @@ void TextEditor::render() {
 }
 
 void TextEditor::emitOp(const oedipus::EditorOp& op) {
+    emitOp(op, true);
+}
+
+void TextEditor::emitOp(const oedipus::EditorOp& op, bool updateCursor) {
     if (op.has_insert()) {
         const oedipus::InsertText& insert = op.insert();
+        size_t line = insert.position().line();
+        size_t column = insert.position().column();
 
         for (char c : insert.text()) {
             if (c == '\n') {
-                size_t line = insert.position().line();
-                size_t column = insert.position().column();
                 this->pieceTable.insertNewLine(column, line);
-                this->state.cursor.y++;
-                this->state.cursor.x = 1;
+                line++;
+                column = 0;
+                if (updateCursor) {
+                    this->state.cursor.y++;
+                    this->state.cursor.x = 1;
+                }
             } else {
-                this->pieceTable.insertChar(insert.position().column(), insert.position().line(), c);
-                this->state.cursor.x++;
+                this->pieceTable.insertChar(column, line, c);
+                column++;
+                if (updateCursor)
+                    this->state.cursor.x++;
             }
         }
-        
+
         return;
     }
 
@@ -118,18 +128,20 @@ void TextEditor::emitOp(const oedipus::EditorOp& op) {
         const oedipus::DeleteText& del = op.delete_();
         if (del.position().column() > 1) {
             this->pieceTable.deleteChar(del.position().column(), del.position().line());
-            if (this->state.cursor.x > 1)
+            if (updateCursor && this->state.cursor.x > 1)
                 this->state.cursor.x--;
         } else {
             size_t line = del.position().line();
             if (line > 0) {
                 size_t prevLineLen = this->pieceTable.lineLength(line - 1);
                 this->pieceTable.removeLine(line);
-                this->state.cursor.y--;
-                this->state.cursor.x = prevLineLen + 1;
+                if (updateCursor) {
+                    this->state.cursor.y--;
+                    this->state.cursor.x = prevLineLen + 1;
+                }
             }
         }
-        
+
         return;
     }
 }
@@ -176,6 +188,9 @@ void TextEditor::drawStatusBar() const {
 
     if (this->ctx->hasServer()) 
         status += " | Server running on: " + this->ctx->serverRef().binding.addr;
+
+    if (this->ctx->hasClient())
+        status += " | Client connected to: " + this->ctx->clientRef().binding.addr;
 
     const size_t cols = this->state.window.cols;
     if (static_cast<int>(status.size()) > cols)
