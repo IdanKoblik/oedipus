@@ -7,20 +7,20 @@
 
 namespace tui {
 
-    static constexpr const char* TL = "┌";
-    static constexpr const char* TR = "┐";
-    static constexpr const char* BL = "└";
-    static constexpr const char* BR = "┘";
-    static constexpr const char* H  = "─";
-    static constexpr const char* V  = "│";
+static constexpr const char* TL = "┌";
+static constexpr const char* TR = "┐";
+static constexpr const char* BL = "└";
+static constexpr const char* BR = "┘";
+static constexpr const char* H  = "─";
+static constexpr const char* V  = "│";
 
-    void drawLine(const std::string& line, const std::vector<size_t>& matches, size_t len);
+void drawLine(const std::string& line, const std::vector<size_t>& matches, size_t len);
 
-    void moveCursor(int r, int c);
+void moveCursor(int r, int c);
 
-    void drawBox(int x, int y, int w, int h);
+void drawBox(int x, int y, int w, int h);
 
-    void drawCenteredBox(const Window& window, int w, int h, int& outX, int& outY);
+void drawCenteredBox(const Window& window, int w, int h, int& outX, int& outY);
 
 }
 

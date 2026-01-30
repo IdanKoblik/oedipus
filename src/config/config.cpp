@@ -1,6 +1,5 @@
 #include "config/config.h"
-
-#include "editor.h"
+#include "global.h"
 
 namespace config {
 
@@ -26,9 +25,10 @@ namespace config {
     }
 
     Config::Config() {
-        keybindings[UNDO]        = { UNDO,        'u' };
-        keybindings[REDO]        = { REDO,        'r' };
+        keybindings[UNDO] = { UNDO, 'u' };
+        keybindings[REDO] = { REDO, 'r' };
         keybindings[SEARCH_MOVE] = { SEARCH_MOVE, '/' };
+        keybindings[CWM_MENU] = { CWM_MENU, CTRL_KEY('o') }; 
         settings[TAB] = { TAB, 4 };
     }
 
@@ -44,6 +44,7 @@ namespace config {
         const std::unordered_map<std::string, KeyBinding> keybinding_map = {
             {"UNDO", UNDO},
             {"REDO", REDO},
+            {"CWM_MENU", CWM_MENU},
             {"SEARCH_MOVE", SEARCH_MOVE},
         };
 
@@ -53,12 +54,22 @@ namespace config {
 
         while (std::getline(file, line)) {
             line = trim(line);
-            if (line.empty() || line[0] == '#') continue;
-            if (line == "[KEYBINDING]") { current = Section::KEYBINDING; continue; }
-            if (line == "[OPTIONS]") { current = Section::OPTIONS; continue; }
+            if (line.empty() || line[0] == '#')
+                continue;
+
+            if (line == "[KEYBINDING]") {
+                current = Section::KEYBINDING;
+                continue;
+            }
+
+            if (line == "[OPTIONS]") { 
+                current = Section::OPTIONS;
+                continue;
+            }
 
             auto eq = line.find('=');
-            if (eq == std::string::npos) continue;
+            if (eq == std::string::npos)
+                continue;
 
             std::string key = trim(line.substr(0, eq));
             std::string value = trim(line.substr(eq + 1));

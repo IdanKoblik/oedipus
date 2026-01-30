@@ -13,6 +13,7 @@ namespace config {
         UNDO,
         REDO,
         SEARCH_MOVE,
+        CWM_MENU,
         KEYBINDING_COUNT
     };
 

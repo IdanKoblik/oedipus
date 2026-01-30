@@ -9,7 +9,7 @@
 
 namespace tui {
 
-    std::string prompt(const Window& window, const std::string& title, const std::string& msg);
+std::string prompt(const Window& window, const std::string& title, const std::string& msg);
 
 }
 

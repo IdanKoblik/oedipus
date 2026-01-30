@@ -19,7 +19,8 @@ namespace ansi {
     constexpr const char* SELECTED_CYAN = "\033[46m";
     constexpr const char* NON_SELECTED = "\033[0m";
 
-
+    constexpr const char* ENABLE_ALT_BUFFER = "\x1b[?1049h";
+    constexpr const char* DISABLE_ALT_BUFFER = "\x1b[?1049l";
 }
 
 #endif // ANSI_H

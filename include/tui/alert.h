@@ -7,16 +7,16 @@
 
 namespace tui {
 
-    enum AlertType {
-        ERROR,
-        WARNING,
-        INFO,
-        UNKNOWN
-    };
+enum class AlertType {
+    ERROR,
+    WARNING,
+    INFO,
+    UNKNOWN
+};
 
-    std::string parseType(AlertType type);
+std::string parseType(AlertType type);
 
-    bool alert(const Window& window, const std::string &msg, AlertType alertType);
+void alert(const Window& window, const std::string &msg, AlertType alertType);
 
 }
 
