@@ -13,11 +13,7 @@ on:
       - main
 
 jobs:
-  testing:
-    uses: ./.github/workflows/callable.testing.yml
-
   publish:
-    if: github.event_name == 'workflow_dispatch'
     needs: testing
     uses: ./.github/workflows/callable.publish.yml
     with:
