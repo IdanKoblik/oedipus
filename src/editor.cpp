@@ -4,6 +4,7 @@
 #include "global.h"
 #include "search.h"
 #include "tui/tui.h"
+#include "terminal.h"
 #include "tui/alert.h"
 #include "context.h"
 #include "handlers/keyboard_handler.h"
@@ -87,6 +88,10 @@ void TextEditor::render() {
     writeStr(ansi::HIDE_CURSOR);
     writeStr(ansi::CURSOR_HOME);
     
+    Window size = windowSize();
+    if (size != this->state.window)
+        this->state.window = size;
+
     this->drawRows();
     this->drawStatusBar();
     this->moveCursor();

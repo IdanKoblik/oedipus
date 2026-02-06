@@ -7,6 +7,14 @@
 struct Window {
     size_t rows;
     size_t cols;
+
+    bool operator==(const Window& other) const {
+        return rows == other.rows && cols == other.cols;
+    }
+
+    bool operator !=(const Window& other) const {
+        return !(*this == other);
+    }
 };
 
 int enableRawMode(struct termios *term);
